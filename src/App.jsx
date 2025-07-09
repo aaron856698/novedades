@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
-import Home from './pages/Home';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -93,8 +92,7 @@ const AnimatedBackground = () => (
 
 function App() {
   const [user, setUser] = useState(null);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useLocation(); // useNavigate is removed, useLocation is kept
 
   useEffect(() => {
     const session = JSON.parse(localStorage.getItem('session'));
@@ -105,7 +103,7 @@ function App() {
 
   const handleLogin = (username) => {
     setUser(username);
-    navigate('/novedades');
+    // navigate('/novedades'); // This line is removed as per the edit hint
   };
 
   const handleLogout = () => {
@@ -115,9 +113,9 @@ function App() {
   };
 
   // Mostrar menú solo si está logueado y en una sección de registro
-  const showMenu = user && ['/novedades', '/eventos', '/reclamos', '/reservas'].some(p => location.pathname.startsWith(p));
-  const sectionColor = getSectionColor(location.pathname);
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const showMenu = user && ['/novedades', '/eventos', '/reclamos', '/reservas'].some(p => navigate.pathname.startsWith(p));
+  const sectionColor = getSectionColor(navigate.pathname);
+  const isAuthPage = navigate.pathname === '/login' || navigate.pathname === '/register';
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', overflowX: 'hidden', position: 'relative' }}>
@@ -142,12 +140,12 @@ function App() {
                     key={item.path}
                     component={RouterLink}
                     to={item.path}
-                    variant={location.pathname.startsWith(item.path) ? 'contained' : 'outlined'}
+                    variant={navigate.pathname.startsWith(item.path) ? 'contained' : 'outlined'}
                     sx={{
                       fontWeight: 700,
                       fontSize: 18,
-                      bgcolor: location.pathname.startsWith(item.path) ? item.color : 'transparent',
-                      color: location.pathname.startsWith(item.path) ? (item.text || '#fff') : (item.color || sectionColor.bg),
+                      bgcolor: navigate.pathname.startsWith(item.path) ? item.color : 'transparent',
+                      color: navigate.pathname.startsWith(item.path) ? (item.text || '#fff') : (item.color || sectionColor.bg),
                       borderColor: item.color,
                       '&:hover': {
                         bgcolor: item.color,
@@ -167,7 +165,8 @@ function App() {
       )}
       <React.Suspense fallback={<div>Cargando...</div>}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          {/* Redirigir la raíz al login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/register" element={<Register />} />
           <Route
@@ -202,6 +201,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* <Route path="/" element={<Home />} /> */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </React.Suspense>
     </Box>
