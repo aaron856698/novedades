@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Link, Paper } from '@mui/material';
+import { Box, Button, TextField, Typography, Link, Paper, Snackbar, Alert } from '@mui/material';
 import { motion } from 'framer-motion';
 
 const AnimatedBackground = () => (
@@ -70,13 +70,17 @@ const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const users = JSON.parse(localStorage.getItem('users') || '{}');
     if (users[username] && users[username].password === password) {
       localStorage.setItem('session', JSON.stringify({ username }));
-      onLogin(username);
+      setSuccess(true);
+      setTimeout(() => {
+        onLogin(username);
+      }, 1200);
     } else {
       setError('Usuario o contraseña incorrectos');
     }
@@ -116,6 +120,11 @@ const Login = ({ onLogin }) => {
           backdropFilter: 'blur(2px)',
         }}
       >
+        <Snackbar open={success} autoHideDuration={1200} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+          <Alert severity="success" variant="filled" sx={{ fontSize: 18, fontWeight: 700 }}>
+            ¡Bienvenido, {username}!
+          </Alert>
+        </Snackbar>
         <Typography
           variant="h3"
           align="center"
