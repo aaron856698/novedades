@@ -274,16 +274,45 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
       .filter(item => item.fecha === fechaCopia)
       .sort((a, b) => turnosOrden.indexOf(a.turno) - turnosOrden.indexOf(b.turno));
     let texto = `Fecha: ${fechaCopia}\n`;
+    let html = `<b>Fecha: ${fechaCopia}</b><br/>`;
+    // Función para limpiar los tags de color
+    const cleanTags = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, '$2') : '';
+    // Función para parsear a HTML
+    const parseHighlight = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, (match, tag, content) => {
+      const color = colorMap[tag] || '#fff59d';
+      return `<span style=\"background:${color};padding:2px 4px;border-radius:3px\">${content}</span>`;
+    }) : '';
     turnosOrden.forEach(turno => {
       const nov = novedadesDia.find(n => n.turno === turno);
       if (nov) {
-        texto += `${turno} - Cubre: ${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}: ${nov.novedad}\n`;
+        const novedadTxt = cleanTags(nov.novedadHtml || nov.novedad || '');
+        const novedadHtml = parseHighlight(nov.novedadHtml || nov.novedad || '');
+        texto += `${turno} - Cubre: ${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}: ${novedadTxt}\n`;
+        html += `<b>${turno}</b> - Cubre: <b>${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}</b>: ${novedadHtml}<br/>`;
       } else {
         texto += `${turno} - Cubre: -: (sin novedad)\n`;
+        html += `<b>${turno}</b> - Cubre: <b>-</b>: (sin novedad)<br/>`;
       }
     });
-    navigator.clipboard.writeText(texto.trim());
-    setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
+    // Copiar ambos formatos
+    if (navigator.clipboard && window.ClipboardItem) {
+      const blobHtml = new Blob([html.trim()], { type: 'text/html' });
+      const blobText = new Blob([texto.trim()], { type: 'text/plain' });
+      navigator.clipboard.write([
+        new window.ClipboardItem({
+          'text/html': blobHtml,
+          'text/plain': blobText
+        })
+      ]).then(() => {
+        setSnackbar({ open: true, message: '¡Novedades copiadas con color!', severity: 'success' });
+      }, () => {
+        setSnackbar({ open: true, message: 'No se pudo copiar en formato enriquecido', severity: 'warning' });
+      });
+    } else {
+      // Fallback solo texto plano
+      navigator.clipboard.writeText(texto.trim());
+      setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
+    }
   };
 
   return (
