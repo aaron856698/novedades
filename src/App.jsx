@@ -25,6 +25,14 @@ function getSectionColor(pathname) {
   return { bg: '#1976d2', text: '#fff' };
 }
 
+function getSectionTitle(pathname) {
+  if (pathname.startsWith('/novedades')) return 'Registro de novedades';
+  if (pathname.startsWith('/eventos')) return 'Registro de eventos';
+  if (pathname.startsWith('/reclamos')) return 'Registro de reclamos';
+  if (pathname.startsWith('/reservas')) return 'Registro de reservas';
+  return 'Registro';
+}
+
 // Fondo animado de luces suaves
 const AnimatedBackground = () => (
   <Box
@@ -116,6 +124,7 @@ function App() {
   // Mostrar menú solo si está logueado y en una sección de registro
   const showMenu = user && ['/novedades', '/eventos', '/reclamos', '/reservas'].some(p => location.pathname.startsWith(p));
   const sectionColor = getSectionColor(location.pathname);
+  const sectionTitle = getSectionTitle(location.pathname);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
@@ -126,7 +135,7 @@ function App() {
           <Toolbar sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2 }}>
             <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
               <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: 1, color: sectionColor.text }}>
-                Registro de eventos
+                {sectionTitle}
               </Typography>
               {user && (
                 <Button onClick={handleLogout} sx={{ fontSize: 18, fontWeight: 600, color: sectionColor.text }}>

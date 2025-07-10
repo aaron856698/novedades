@@ -18,6 +18,14 @@ const conserjes = ["aaron", "maria", "lisa", "martin", "sebastian", "guardia"];
 const turnoColors = { "Mañana": '#81d4fa', "Tarde": '#ffd54f', "Noche": '#9575cd' };
 const conserjeColors = { aaron: '#43a047', maria: '#e57373', lisa: '#ba68c8', martin: '#ffd600', sebastian: '#00bcd4', guardia: '#8d6e63' };
 
+const highlightColors = [
+  { name: 'AMA', color: '#fff59d' },
+  { name: 'VER', color: '#a5d6a7' },
+  { name: 'CEL', color: '#81d4fa' },
+  { name: 'NAR', color: '#ffcc80' },
+  { name: 'ROS', color: '#f8bbd0' },
+];
+
 const sectionStyles = {
   primary: {
     main: '#43a047', bg: '#f8fff5', icon: <AnnouncementIcon fontSize="large" sx={{ color: '#43a047', mr: 1 }} />,
@@ -40,13 +48,27 @@ function migrateItem(item) {
   return { ...item, file: item.file || null, fileName: item.fileName || '', user: item.user || '' };
 }
 
-const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields }) => {
+const colorTags = {
+  '#fff59d': 'yellow',
+  '#a5d6a7': 'green',
+  '#81d4fa': 'blue',
+  '#ffcc80': 'orange',
+  '#f8bbd0': 'pink',
+};
+const colorMap = {
+  yellow: '#fff59d',
+  green: '#a5d6a7',
+  blue: '#81d4fa',
+  orange: '#ffcc80',
+  pink: '#f8bbd0',
+};
+
+const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje }) => {
   const [novedad, setNovedad] = useState('');
+  const [novedadHtml, setNovedadHtml] = useState('');
   const [novedades, setNovedades] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [fecha, setFecha] = useState('');
-  const [turno, setTurno] = useState('');
-  const [conserje, setConserje] = useState('');
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
   const [search, setSearch] = useState('');
@@ -58,6 +80,8 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
 
   // Estados para campos extra
   const [extra, setExtra] = useState({});
+  const [turno, setTurno] = useState('');
+  const [conserje, setConserje] = useState('');
 
   const section = sectionStyles[color] || sectionStyles.primary;
   const fondoGeneral = '#fffde7';
@@ -105,7 +129,38 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const handleNovedadChange = (e) => {
     let value = e.target.value.replace(/,\s?/g, '\n');
     setNovedad(value);
+    setNovedadHtml(value); // Por defecto, sin HTML
   };
+
+  // Resaltar selección
+  const handleHighlight = (color) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return;
+    // Permitir múltiples resaltados: solo envolver la selección actual
+    const before = novedad.slice(0, start);
+    const selected = novedad.slice(start, end);
+    const after = novedad.slice(end);
+    const tag = colorTags[color];
+    const withTag = `${before}[${tag}]${selected}[/${tag}]${after}`;
+    setNovedad(withTag);
+    setNovedadHtml(withTag);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = before.length + (`[${tag}]${selected}[/${tag}]`).length;
+    }, 0);
+  };
+
+  // Parsear marcadores a HTML para mostrar en la lista
+  function parseHighlight(text) {
+    if (!text) return '';
+    return text.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, (match, tag, content) => {
+      const color = colorMap[tag] || '#fff59d';
+      return `<span style="background:${color};padding:2px 4px;border-radius:3px">${content}</span>`;
+    });
+  }
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -132,14 +187,14 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   };
 
   const handleAdd = () => {
-    if (!novedad.trim() || !fecha || !turno || !conserje) return;
+    if (!novedadHtml.trim() || !fecha || !turno || (!hideConserje && !conserje)) return;
     // Validar campos extra si existen
     if (extraFields) {
       for (const key of Object.keys(extraFields)) {
         if (!extra[key] || extra[key].toString().trim() === '') return;
       }
     }
-    const nueva = { novedad, fecha, turno, conserje, file, fileName, user, ...extra };
+    const nueva = { novedadHtml, fecha, file, fileName, user, turno, conserje, ...extra };
     if (editIndex !== null) {
       const updated = [...novedades];
       updated[editIndex] = nueva;
@@ -151,11 +206,12 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
       setSnackbar({ open: true, message: '¡Registro agregado!', severity: 'success' });
     }
     setNovedad('');
+    setNovedadHtml('');
     setFecha('');
-    setTurno('');
-    setConserje('');
     setFile(null);
     setFileName('');
+    setTurno('');
+    setConserje('');
     if (extraFields) {
       const reset = {};
       Object.keys(extraFields).forEach(key => { reset[key] = ''; });
@@ -165,12 +221,13 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
 
   const handleEdit = (idx) => {
     const item = novedades[idx];
-    setNovedad(item.novedad);
+    setNovedad(item.novedadHtml ? item.novedadHtml.replace(/<[^>]+>/g, '') : item.novedad);
+    setNovedadHtml(item.novedadHtml || item.novedad || '');
     setFecha(item.fecha);
-    setTurno(item.turno);
-    setConserje(item.conserje);
     setFile(item.file || null);
     setFileName(item.fileName || '');
+    setTurno(item.turno || '');
+    setConserje(item.conserje || '');
     setEditIndex(idx);
     if (extraFields) {
       const newExtra = {};
@@ -186,11 +243,12 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     saveNovedades(updated);
     setSnackbar({ open: true, message: 'Registro eliminado', severity: 'warning' });
     setNovedad('');
+    setNovedadHtml('');
     setFecha('');
-    setTurno('');
-    setConserje('');
     setFile(null);
     setFileName('');
+    setTurno('');
+    setConserje('');
     setEditIndex(null);
   };
 
@@ -204,9 +262,29 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     if (!item || typeof item !== 'object') return false;
     const matchTexto = search.trim() === '' || item.novedad.toLowerCase().includes(search.toLowerCase());
     const matchFecha = searchDate === '' || item.fecha === searchDate;
-    const matchUser = searchUser.trim() === '' || (item.conserje && item.conserje.toLowerCase().includes(searchUser.toLowerCase()));
+    const matchUser = searchUser.trim() === '' || (item.user && item.user.toLowerCase().includes(searchUser.toLowerCase()));
     return matchTexto && matchFecha && matchUser;
   });
+
+  // Copiar novedades del día filtrado
+  const handleCopyDay = () => {
+    const fechaCopia = searchDate || new Date().toISOString().slice(0, 10);
+    const turnosOrden = ['Mañana', 'Tarde', 'Noche'];
+    const novedadesDia = novedades
+      .filter(item => item.fecha === fechaCopia)
+      .sort((a, b) => turnosOrden.indexOf(a.turno) - turnosOrden.indexOf(b.turno));
+    let texto = `Fecha: ${fechaCopia}\n`;
+    turnosOrden.forEach(turno => {
+      const nov = novedadesDia.find(n => n.turno === turno);
+      if (nov) {
+        texto += `${turno} - Cubre: ${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}: ${nov.novedad}\n`;
+      } else {
+        texto += `${turno} - Cubre: -: (sin novedad)\n`;
+      }
+    });
+    navigator.clipboard.writeText(texto.trim());
+    setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
+  };
 
   return (
     <Box sx={{ bgcolor: fondoGeneral, minHeight: '100vh', transition: 'background 0.3s', overflowX: 'hidden', width: '100vw', maxWidth: '100vw', p: 0, m: 0 }}>
@@ -261,42 +339,61 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
           <Box display="flex" flexDirection="column" gap={2}>
             {/* Campos extra personalizados */}
             {extraFields && Object.entries(extraFields).map(([key, field]) => (
-              field.options ? (
-                <FormControl fullWidth key={key}>
-                  <InputLabel id={`${key}-label`}>{field.label}</InputLabel>
-                  <Select
-                    labelId={`${key}-label`}
-                    value={extra[key] || ''}
+              field.render
+                ? (
+                  <div key={key}>
+                    {field.render({
+                      value: extra[key] || '',
+                      onChange: v => handleExtraChange(key, v),
+                    })}
+                  </div>
+                )
+                : field.options ? (
+                  <FormControl fullWidth key={key}>
+                    <InputLabel id={`${key}-label`}>{field.label}</InputLabel>
+                    <Select
+                      labelId={`${key}-label`}
+                      value={extra[key] || ''}
+                      label={field.label}
+                      onChange={e => handleExtraChange(key, e.target.value)}
+                      inputProps={{ style: { fontSize: 18 } }}
+                      sx={field.selectProps?.sx}
+                      MenuProps={field.selectProps?.MenuProps}
+                    >
+                      {field.options.map(opt => (
+                        <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                ) : (
+                  <TextField
+                    key={key}
                     label={field.label}
+                    fullWidth
+                    value={extra[key] || ''}
                     onChange={e => handleExtraChange(key, e.target.value)}
                     inputProps={{ style: { fontSize: 18 } }}
-                    sx={field.selectProps?.sx}
-                    MenuProps={field.selectProps?.MenuProps}
-                  >
-                    {field.options.map(opt => (
-                      <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              ) : (
-                <TextField
-                  key={key}
-                  label={field.label}
-                  fullWidth
-                  value={extra[key] || ''}
-                  onChange={e => handleExtraChange(key, e.target.value)}
-                  inputProps={{ style: { fontSize: 18 } }}
-                  sx={{ bgcolor: '#fff', borderRadius: 2 }}
-                />
-              )
+                    sx={{ bgcolor: '#fff', borderRadius: 2 }}
+                  />
+                )
             ))}
+            {/* Resaltador */}
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <Typography variant="body2" color="text.secondary">Resaltar:</Typography>
+              {highlightColors.map(opt => (
+                <Button key={opt.color} size="small" onClick={() => handleHighlight(opt.color)} sx={{ minWidth: 0, bgcolor: opt.color, color: '#333', border: '1px solid #bbb', px: 2.5, py: 0.5, borderRadius: 3, fontWeight: 700, fontSize: 15, letterSpacing: 1 }}>
+                  {opt.name}
+                </Button>
+              ))}
+            </Box>
             <TextField
               label={titulo.slice(0, -1)}
               fullWidth
               value={novedad}
               onChange={handleNovedadChange}
               autoFocus
-              inputProps={{ style: { fontSize: 20, minHeight: 60, lineHeight: 1.4 }, ref: textareaRef, as: 'textarea', rows: 2 }}
+              inputProps={{ style: { fontSize: 20, minHeight: 60, lineHeight: 1.4 }, as: 'textarea', rows: 2 }}
+              inputRef={textareaRef}
               multiline
               minRows={2}
               maxRows={8}
@@ -333,19 +430,21 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                 {turnos.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
             </FormControl>
-            <FormControl fullWidth>
-              <InputLabel id="conserje-label">Quién cubre</InputLabel>
-              <Select
-                labelId="conserje-label"
-                value={conserje}
-                label="Quién cubre"
-                onChange={e => setConserje(e.target.value)}
-                inputProps={{ style: { fontSize: 18 } }}
-                sx={{ bgcolor: '#fff', borderRadius: 2 }}
-              >
-                {conserjes.map(c => <MenuItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</MenuItem>)}
-              </Select>
-            </FormControl>
+            {!hideConserje && (
+              <FormControl fullWidth>
+                <InputLabel id="conserje-label">Quién cubre</InputLabel>
+                <Select
+                  labelId="conserje-label"
+                  value={conserje}
+                  label="Quién cubre"
+                  onChange={e => setConserje(e.target.value)}
+                  inputProps={{ style: { fontSize: 18 } }}
+                  sx={{ bgcolor: '#fff', borderRadius: 2 }}
+                >
+                  {conserjes.map(c => <MenuItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</MenuItem>)}
+                </Select>
+              </FormControl>
+            )}
             <Button
               variant="contained"
               color={color || 'primary'}
@@ -423,6 +522,14 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                 sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
                 inputProps={{ style: { fontSize: 16 } }}
               />
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                onClick={handleCopyDay}
+                sx={{ fontWeight: 700, fontSize: 16, borderRadius: 2, bgcolor: '#fff', color: section.main, borderColor: section.main, '&:hover': { bgcolor: section.main, color: '#fff' } }}
+              >
+                Copiar novedades del día
+              </Button>
               <TextField
                 size="small"
                 label="Buscar por usuario"
@@ -489,7 +596,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                   <ListItemText
                     primary={<>
                       <Typography variant="h6" sx={{ fontWeight: 700, wordBreak: 'break-word', whiteSpace: 'pre-line', mb: 1, fontSize: 22, fontFamily: 'Montserrat, Roboto, Arial' }}>
-                        {item.novedad}
+                        <span dangerouslySetInnerHTML={{ __html: parseHighlight(item.novedadHtml || item.novedad) }} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: 18, mt: 1 }}>
                         Fecha: <b>{item.fecha || '-'}</b> | Turno: <b>{item.turno || '-'}</b> | Cubre: <b>{item.conserje ? item.conserje.charAt(0).toUpperCase() + item.conserje.slice(1) : '-'}</b>
