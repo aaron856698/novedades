@@ -292,7 +292,12 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
         const novedadTxt = cleanTags(nov.novedadHtml || nov.novedad || '');
         const novedadHtml = parseHighlight(nov.novedadHtml || nov.novedad || '');
         texto += `${turno} - Cubre: ${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}: ${novedadTxt}\n`;
-        html += `<b>${turno}</b> - Cubre: <b>${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}</b>: ${novedadHtml}<br/>`;
+        html += `<b>${turno}</b> - Cubre: <b>${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}</b>: ${novedadHtml}`;
+        // Si hay imagen adjunta, incluirla en el HTML
+        if (nov.file && typeof nov.file === 'string' && nov.file.startsWith('data:image')) {
+          html += `<br/><img src=\"${nov.file}\" alt=\"adjunto\" style=\"max-width:300px;display:block;margin:10px 0;border-radius:8px;box-shadow:0 2px 8px 0 rgba(60,60,60,0.10);\" />`;
+        }
+        html += '<br/>';
       } else {
         texto += `${turno} - Cubre: -: (sin novedad)\n`;
         html += `<b>${turno}</b> - Cubre: <b>-</b>: (sin novedad)<br/>`;
