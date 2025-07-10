@@ -8,6 +8,7 @@ const Reclamos = ({ user, onLogout }) => (
     storageKeyPrefix="reclamos_"
     titulo="Reclamos"
     color="error"
+    showSearchUser={true}
   />
 );
 

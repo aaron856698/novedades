@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import RegistroGenerico from './RegistroGenerico';
 import { Autocomplete, TextField, InputAdornment } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
+import PersonIcon from '@mui/icons-material/Person';
 
 const unidades = [
   'ph1','ph2','ph3','ph4','ph5',
@@ -16,6 +17,8 @@ const headers = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
 const Reservas = ({ user, onLogout }) => {
   const [unidad, setUnidad] = useState('');
+  const [propietario, setPropietario] = useState('');
+  
   return (
     <RegistroGenerico
       user={user}
@@ -57,6 +60,35 @@ const Reservas = ({ user, onLogout }) => {
                 />
               )}
               sx={{ mb: 1 }}
+            />
+          )
+        },
+        propietario: {
+          label: 'Nombre de Propietario',
+          value: propietario,
+          onChange: setPropietario,
+          render: ({ value, onChange }) => (
+            <TextField
+              label="Nombre de Propietario"
+              fullWidth
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: '#6a1b9a', mr: 1 }} />
+                  </InputAdornment>
+                ),
+                style: { fontSize: 18, fontWeight: 700, background: '#f3e5f5', borderRadius: 8 },
+              }}
+              sx={{
+                bgcolor: '#f3e5f5',
+                borderRadius: 2,
+                fontWeight: 700,
+                fontSize: 18,
+                boxShadow: '0 2px 8px 0 rgba(186,104,200,0.10)',
+              }}
             />
           )
         }

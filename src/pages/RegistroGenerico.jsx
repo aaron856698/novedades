@@ -12,6 +12,7 @@ import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import BookOnlineIcon from '@mui/icons-material/BookOnline';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import PersonIcon from '@mui/icons-material/Person';
 
 const turnos = ["Mañana", "Tarde", "Noche"];
 const conserjes = ["aaron", "maria", "lisa", "martin", "sebastian", "guardia"];
@@ -63,7 +64,7 @@ const colorMap = {
   pink: '#f8bbd0',
 };
 
-const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje }) => {
+const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje, showSearchUser }) => {
   const [novedad, setNovedad] = useState('');
   const [novedadHtml, setNovedadHtml] = useState('');
   const [novedades, setNovedades] = useState([]);
@@ -74,6 +75,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const [search, setSearch] = useState('');
   const [searchDate, setSearchDate] = useState('');
   const [searchUser, setSearchUser] = useState('');
+  const [searchPropietario, setSearchPropietario] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const textareaRef = useRef(null);
   const theme = useTheme();
@@ -257,13 +259,15 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     setSnackbar({ open: true, message: '¡Novedad copiada!', severity: 'success' });
   };
 
-  // Filtro por texto, fecha y usuario (quién cubre)
+  // Filtro por texto, fecha, usuario (quién cubre) y propietario
   const novedadesFiltradas = novedades.filter(item => {
     if (!item || typeof item !== 'object') return false;
     const matchTexto = search.trim() === '' || item.novedad.toLowerCase().includes(search.toLowerCase());
     const matchFecha = searchDate === '' || item.fecha === searchDate;
-    const matchUser = searchUser.trim() === '' || (item.user && item.user.toLowerCase().includes(searchUser.toLowerCase()));
-    return matchTexto && matchFecha && matchUser;
+    // Si showSearchUser está activo, filtrar por conserje (quién cubre)
+    const matchUser = !showSearchUser || searchUser.trim() === '' || (item.conserje && item.conserje.toLowerCase().includes(searchUser.toLowerCase()));
+    const matchPropietario = searchPropietario.trim() === '' || (item.propietario && item.propietario.toLowerCase().includes(searchPropietario.toLowerCase()));
+    return matchTexto && matchFecha && matchUser && matchPropietario;
   });
 
   // Copiar novedades del día filtrado
@@ -559,18 +563,34 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
               >
                 Copiar novedades del día
               </Button>
-              <TextField
-                size="small"
-                label="Buscar por usuario"
-                value={searchUser}
-                onChange={e => setSearchUser(e.target.value)}
-                sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
-                inputProps={{ style: { fontSize: 16 } }}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 1, color: section.main }} /></InputAdornment>,
-                  style: { fontSize: 16 },
-                }}
-              />
+              {showSearchUser && (
+                <TextField
+                  size="small"
+                  label="Buscar por usuario"
+                  value={searchUser}
+                  onChange={e => setSearchUser(e.target.value)}
+                  sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
+                  inputProps={{ style: { fontSize: 16 } }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 1, color: section.main }} /></InputAdornment>,
+                    style: { fontSize: 16 },
+                  }}
+                />
+              )}
+              {!showSearchUser && (
+                <TextField
+                  size="small"
+                  label="Buscar por propietario"
+                  value={searchPropietario}
+                  onChange={e => setSearchPropietario(e.target.value)}
+                  sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
+                  inputProps={{ style: { fontSize: 16 } }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 1, color: section.main }} /></InputAdornment>,
+                    style: { fontSize: 16 },
+                  }}
+                />
+              )}
             </Stack>
           </Stack>
           <Divider sx={{ mb: 2 }} />
@@ -631,9 +651,15 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                         Fecha: <b>{item.fecha || '-'}</b> | Turno: <b>{item.turno || '-'}</b> | Cubre: <b>{item.conserje ? item.conserje.charAt(0).toUpperCase() + item.conserje.slice(1) : '-'}</b>
                         {/* Mostrar campos extra si existen */}
                         {extraFields && Object.entries(extraFields).map(([key, field]) => (
-                          <span key={key}> | {field.label}: <b>{item[key] || '-'}</b></span>
+                          key === 'propietario' ? null : <span key={key}> | {field.label}: <b>{item[key] || '-'}</b></span>
                         ))}
                       </Typography>
+                      {/* Mostrar propietario en una línea separada y más prolija */}
+                      {item.propietario && (
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 16, mt: 0.5, ml: 0, fontStyle: 'italic', display: 'block' }}>
+                          Propietario: <b>{item.propietario}</b>
+                        </Typography>
+                      )}
                       {item.file && (
                         <Box mt={2}>
                           {item.file.startsWith('data:image') ? (

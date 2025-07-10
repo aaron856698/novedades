@@ -8,6 +8,7 @@ const Novedades = ({ user, onLogout }) => (
     storageKeyPrefix="novedades_"
     titulo="Novedades"
     color="primary"
+    showSearchUser={true}
   />
 );
 

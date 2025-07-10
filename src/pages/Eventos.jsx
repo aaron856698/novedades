@@ -2,6 +2,7 @@ import React from 'react';
 import RegistroGenerico from './RegistroGenerico';
 import { Autocomplete, TextField, InputAdornment } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
+import PersonIcon from '@mui/icons-material/Person';
 
 const unidades = [
   'ph1','ph2','ph3','ph4','ph5',
@@ -14,6 +15,8 @@ const unidades = [
 
 const Eventos = ({ user, onLogout }) => {
   const [unidad, setUnidad] = React.useState('');
+  const [propietario, setPropietario] = React.useState('');
+  
   return (
     <RegistroGenerico
       user={user}
@@ -55,6 +58,35 @@ const Eventos = ({ user, onLogout }) => {
                 />
               )}
               sx={{ mb: 1 }}
+            />
+          )
+        },
+        propietario: {
+          label: 'Nombre de Propietario',
+          value: propietario,
+          onChange: setPropietario,
+          render: ({ value, onChange }) => (
+            <TextField
+              label="Nombre de Propietario"
+              fullWidth
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: '#e57373', mr: 1 }} />
+                  </InputAdornment>
+                ),
+                style: { fontSize: 18, fontWeight: 700, background: '#ffebee', borderRadius: 8 },
+              }}
+              sx={{
+                bgcolor: '#ffebee',
+                borderRadius: 2,
+                fontWeight: 700,
+                fontSize: 18,
+                boxShadow: '0 2px 8px 0 rgba(229,115,115,0.10)',
+              }}
             />
           )
         }
