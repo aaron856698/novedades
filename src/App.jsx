@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link as RouterLink, u
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AppBar, Toolbar, Typography, Button, Box, Stack } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Stack, TextField, InputAdornment } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import SearchIcon from '@mui/icons-material/Search';
 
 const Novedades = React.lazy(() => import('./pages/Novedades'));
 const Eventos = React.lazy(() => import('./pages/Eventos'));
@@ -121,6 +123,63 @@ function App() {
     navigate('/login');
   };
 
+  // Filtros globales para las páginas de registro
+  const [searchDate, setSearchDate] = useState('');
+  const [searchUser, setSearchUser] = useState('');
+  const [searchPropietario, setSearchPropietario] = useState('');
+  // Para mostrar snackbar de copiado
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  // Función para copiar novedades del día (se pasa como prop)
+  const handleCopyDay = (novedades, showSearchUser) => {
+    const fechaCopia = searchDate || new Date().toISOString().slice(0, 10);
+    const turnosOrden = ['Mañana', 'Tarde', 'Noche'];
+    const novedadesDia = novedades
+      .filter(item => item.fecha === fechaCopia)
+      .sort((a, b) => turnosOrden.indexOf(a.turno) - turnosOrden.indexOf(b.turno));
+    let texto = `Fecha: ${fechaCopia}\n`;
+    let html = `<b>Fecha: ${fechaCopia}</b><br/>`;
+    const cleanTags = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, '$2') : '';
+    const parseHighlight = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, (match, tag, content) => {
+      const colorMap = { yellow: '#fff59d', green: '#a5d6a7', blue: '#81d4fa', orange: '#ffcc80', pink: '#f8bbd0' };
+      const color = colorMap[tag] || '#fff59d';
+      return `<span style=\\"background:${color};padding:2px 4px;border-radius:3px\\">${content}</span>`;
+    }) : '';
+    turnosOrden.forEach(turno => {
+      const nov = novedadesDia.find(n => n.turno === turno);
+      if (nov) {
+        const novedadTxt = cleanTags(nov.novedadHtml || nov.novedad || '');
+        const novedadHtml = parseHighlight(nov.novedadHtml || nov.novedad || '');
+        texto += `${turno} - Cubre: ${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}: ${novedadTxt}\n`;
+        html += `<b>${turno}</b> - Cubre: <b>${nov.conserje ? nov.conserje.charAt(0).toUpperCase() + nov.conserje.slice(1) : '-'}</b>: ${novedadHtml}`;
+        if (nov.file && typeof nov.file === 'string' && nov.file.startsWith('data:image')) {
+          html += `<br/><img src=\\"${nov.file}\\" alt=\\"adjunto\\" style=\\"max-width:300px;display:block;margin:10px 0;border-radius:8px;box-shadow:0 2px 8px 0 rgba(60,60,60,0.10);\\" />`;
+        }
+        html += '<br/>';
+      } else {
+        texto += `${turno} - Cubre: -: (sin novedad)\n`;
+        html += `<b>${turno}</b> - Cubre: <b>-</b>: (sin novedad)<br/>`;
+      }
+    });
+    if (navigator.clipboard && window.ClipboardItem) {
+      const blobHtml = new Blob([html.trim()], { type: 'text/html' });
+      const blobText = new Blob([texto.trim()], { type: 'text/plain' });
+      navigator.clipboard.write([
+        new window.ClipboardItem({
+          'text/html': blobHtml,
+          'text/plain': blobText
+        })
+      ]).then(() => {
+        setSnackbar({ open: true, message: '¡Novedades copiadas con color!', severity: 'success' });
+      }, () => {
+        setSnackbar({ open: true, message: 'No se pudo copiar en formato enriquecido', severity: 'warning' });
+      });
+    } else {
+      navigator.clipboard.writeText(texto.trim());
+      setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
+    }
+  };
+
   // Mostrar menú solo si está logueado y en una sección de registro
   const showMenu = user && ['/novedades', '/eventos', '/reclamos', '/reservas'].some(p => location.pathname.startsWith(p));
   const sectionColor = getSectionColor(location.pathname);
@@ -132,44 +191,167 @@ function App() {
       {isAuthPage && <AnimatedBackground />}
       {!isAuthPage && (
         <AppBar position="static" elevation={2} sx={{ mb: 0, borderRadius: 0, width: '100%', bgcolor: sectionColor.bg, color: sectionColor.text, transition: 'background 0.3s' }}>
-          <Toolbar sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2 }}>
-            <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
-              <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: 1, color: sectionColor.text }}>
-                {sectionTitle}
-              </Typography>
-              {user && (
-                <Button onClick={handleLogout} sx={{ fontSize: 18, fontWeight: 600, color: sectionColor.text }}>
-                  Cerrar sesión
-                </Button>
-              )}
-            </Box>
-            {showMenu && (
-              <Stack direction="row" spacing={2} mt={2} width="100%" justifyContent="center">
-                {menuItems.map(item => (
-                  <Button
-                    key={item.path}
-                    component={RouterLink}
-                    to={item.path}
-                    variant={location.pathname.startsWith(item.path) ? 'contained' : 'outlined'}
+          <Toolbar sx={{ flexDirection: 'column', alignItems: 'stretch', py: 2, px: { xs: 1, md: 4 }, minHeight: 0 }}>
+            {/* Fila superior: filtro a la izquierda, menú y cerrar sesión a la derecha */}
+            <Box width="100%" display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+              {/* Filtro a la izquierda */}
+              {showMenu && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    justifyContent: 'flex-start',
+                    gap: { xs: 2, sm: 2.5 },
+                    bgcolor: 'rgba(255,255,255,0.97)',
+                    boxShadow: '0 2px 16px 0 rgba(60,60,60,0.10)',
+                    borderRadius: 4,
+                    px: { xs: 2, sm: 4 },
+                    py: { xs: 2, sm: 1.5 },
+                    minHeight: 56,
+                    maxWidth: 600,
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    label="Filtrar por fecha"
+                    type="date"
+                    value={searchDate}
+                    onChange={e => setSearchDate(e.target.value)}
+                    InputLabelProps={{ shrink: true, sx: { fontSize: 15, color: '#388e3c', fontWeight: 500, letterSpacing: 0.2 } }}
                     sx={{
-                      fontWeight: 700,
-                      fontSize: 18,
-                      bgcolor: location.pathname.startsWith(item.path) ? item.color : 'transparent',
-                      color: location.pathname.startsWith(item.path) ? (item.text || '#fff') : (item.color || sectionColor.bg),
-                      borderColor: item.color,
-                      '&:hover': {
-                        bgcolor: item.color,
-                        color: item.text || '#fff',
-                        borderColor: item.color,
-                        opacity: 0.9,
-                      },
+                      bgcolor: '#f7faf7',
+                      borderRadius: 2.5,
+                      minWidth: 120,
+                      maxWidth: 160,
+                      border: '1.5px solid #e0e0e0',
+                      boxShadow: '0 1px 4px 0 rgba(67,160,71,0.04)',
+                      '& .MuiInputBase-root': { fontSize: 15, height: 40 },
+                      '& .MuiInputLabel-root': { fontSize: 15 },
+                      '& .Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#43a047', boxShadow: '0 0 0 2px #43a04722' },
+                    }}
+                    inputProps={{ style: { fontSize: 15, height: 40, padding: '10px 12px' } }}
+                  />
+                  {location.pathname.startsWith('/novedades') || location.pathname.startsWith('/reclamos') ? (
+                    <TextField
+                      size="small"
+                      label="Buscar por usuario"
+                      value={searchUser}
+                      onChange={e => setSearchUser(e.target.value)}
+                      InputLabelProps={{ sx: { fontSize: 15, color: '#388e3c', fontWeight: 500, letterSpacing: 0.2 } }}
+                      sx={{
+                        bgcolor: '#f7faf7',
+                        borderRadius: 2.5,
+                        minWidth: 120,
+                        maxWidth: 160,
+                        border: '1.5px solid #e0e0e0',
+                        boxShadow: '0 1px 4px 0 rgba(67,160,71,0.04)',
+                        '& .MuiInputBase-root': { fontSize: 15, height: 40 },
+                        '& .MuiInputLabel-root': { fontSize: 15 },
+                        '& .Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#43a047', boxShadow: '0 0 0 2px #43a04722' },
+                      }}
+                      inputProps={{ style: { fontSize: 15, height: 40, padding: '10px 12px' } }}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 0.5, color: sectionColor.bg, fontSize: 20 }} /></InputAdornment>,
+                        style: { fontSize: 15 },
+                      }}
+                    />
+                  ) : (
+                    <TextField
+                      size="small"
+                      label="Buscar por propietario"
+                      value={searchPropietario}
+                      onChange={e => setSearchPropietario(e.target.value)}
+                      InputLabelProps={{ sx: { fontSize: 15, color: '#388e3c', fontWeight: 500, letterSpacing: 0.2 } }}
+                      sx={{
+                        bgcolor: '#f7faf7',
+                        borderRadius: 2.5,
+                        minWidth: 120,
+                        maxWidth: 160,
+                        border: '1.5px solid #e0e0e0',
+                        boxShadow: '0 1px 4px 0 rgba(67,160,71,0.04)',
+                        '& .MuiInputBase-root': { fontSize: 15, height: 40 },
+                        '& .MuiInputLabel-root': { fontSize: 15 },
+                        '& .Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#43a047', boxShadow: '0 0 0 2px #43a04722' },
+                      }}
+                      inputProps={{ style: { fontSize: 15, height: 40, padding: '10px 12px' } }}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 0.5, color: sectionColor.bg, fontSize: 20 }} /></InputAdornment>,
+                        style: { fontSize: 15 },
+                      }}
+                    />
+                  )}
+                  <Button
+                    variant="contained"
+                    startIcon={<ContentCopyIcon sx={{ fontSize: 20 }} />}
+                    onClick={() => window.dispatchEvent(new CustomEvent('copyNovedadesDelDia'))}
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: 15,
+                      borderRadius: 2.5,
+                      bgcolor: sectionColor.bg,
+                      color: sectionColor.text,
+                      boxShadow: '0 1px 4px 0 rgba(67,160,71,0.08)',
+                      px: 3,
+                      py: 1.1,
+                      minWidth: 150,
+                      height: 40,
+                      '&:hover': { bgcolor: sectionColor.bg, opacity: 0.93 },
+                      transition: 'box-shadow 0.2s',
                     }}
                   >
-                    {item.label}
+                    Copiar novedades del día
                   </Button>
-                ))}
-              </Stack>
-            )}
+                </Box>
+              )}
+              {/* Menú y cerrar sesión a la derecha */}
+              <Box display="flex" alignItems="center" gap={2}>
+                {showMenu && (
+                  <Stack direction="row" spacing={2} flex={0} justifyContent="flex-end" alignItems="center">
+                    {menuItems.map(item => (
+                      <Button
+                        key={item.path}
+                        component={RouterLink}
+                        to={item.path}
+                        variant="contained"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 18,
+                          bgcolor: item.color,
+                          color: item.text || '#fff',
+                          borderColor: item.color,
+                          boxShadow: '0 1px 6px 0 rgba(60,60,60,0.07)',
+                          minWidth: 120,
+                          px: 2,
+                          py: 1,
+                          borderRadius: 2,
+                          transition: 'background 0.2s',
+                          opacity: location.pathname.startsWith(item.path) ? 1 : 0.85,
+                          '&:hover': {
+                            bgcolor: item.color,
+                            color: item.text || '#fff',
+                            opacity: 1,
+                          },
+                        }}
+                      >
+                        {item.label}
+                      </Button>
+                    ))}
+                  </Stack>
+                )}
+                {user && (
+                  <Button onClick={handleLogout} sx={{ fontSize: 18, fontWeight: 600, color: sectionColor.text, px: 2, py: 1, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.10)', ml: 2, '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' } }}>
+                    Cerrar sesión
+                  </Button>
+                )}
+              </Box>
+            </Box>
+            {/* Título debajo, centrado */}
+            <Box width="100%" display="flex" justifyContent="center" alignItems="center" mb={2} mt={1}>
+              <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: 1, color: sectionColor.text, textAlign: 'center' }}>
+                {sectionTitle}
+              </Typography>
+            </Box>
           </Toolbar>
         </AppBar>
       )}
@@ -183,7 +365,13 @@ function App() {
             path="/novedades"
             element={
               <ProtectedRoute>
-                <Novedades user={user} onLogout={handleLogout} />
+                <Novedades
+                  user={user}
+                  onLogout={handleLogout}
+                  searchDate={searchDate}
+                  searchUser={searchUser}
+                  handleCopyDay={handleCopyDay}
+                />
               </ProtectedRoute>
             }
           />
@@ -191,7 +379,13 @@ function App() {
             path="/eventos"
             element={
               <ProtectedRoute>
-                <Eventos user={user} onLogout={handleLogout} />
+                <Eventos
+                  user={user}
+                  onLogout={handleLogout}
+                  searchDate={searchDate}
+                  searchPropietario={searchPropietario}
+                  handleCopyDay={handleCopyDay}
+                />
               </ProtectedRoute>
             }
           />
@@ -199,7 +393,13 @@ function App() {
             path="/reclamos"
             element={
               <ProtectedRoute>
-                <Reclamos user={user} onLogout={handleLogout} />
+                <Reclamos
+                  user={user}
+                  onLogout={handleLogout}
+                  searchDate={searchDate}
+                  searchUser={searchUser}
+                  handleCopyDay={handleCopyDay}
+                />
               </ProtectedRoute>
             }
           />
@@ -207,7 +407,13 @@ function App() {
             path="/reservas"
             element={
               <ProtectedRoute>
-                <Reservas user={user} onLogout={handleLogout} />
+                <Reservas
+                  user={user}
+                  onLogout={handleLogout}
+                  searchDate={searchDate}
+                  searchPropietario={searchPropietario}
+                  handleCopyDay={handleCopyDay}
+                />
               </ProtectedRoute>
             }
           />

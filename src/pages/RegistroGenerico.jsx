@@ -64,7 +64,7 @@ const colorMap = {
   pink: '#f8bbd0',
 };
 
-const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje, showSearchUser }) => {
+const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje, showSearchUser, searchDate, searchUser, searchPropietario, handleCopyDay }) => {
   const [novedad, setNovedad] = useState('');
   const [novedadHtml, setNovedadHtml] = useState('');
   const [novedades, setNovedades] = useState([]);
@@ -73,10 +73,6 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
   const [search, setSearch] = useState('');
-  const [searchDate, setSearchDate] = useState('');
-  const [searchUser, setSearchUser] = useState('');
-  const [searchPropietario, setSearchPropietario] = useState('');
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const textareaRef = useRef(null);
   const theme = useTheme();
 
@@ -84,6 +80,8 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const [extra, setExtra] = useState({});
   const [turno, setTurno] = useState('');
   const [conserje, setConserje] = useState('');
+  // 1. Agregar estado para lightbox de imagen
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   const section = sectionStyles[color] || sectionStyles.primary;
   const fondoGeneral = '#fffde7';
@@ -201,11 +199,11 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
       const updated = [...novedades];
       updated[editIndex] = nueva;
       saveNovedades(updated);
-      setSnackbar({ open: true, message: 'Registro editado correctamente', severity: 'info' });
+      // setSnackbar({ open: true, message: 'Registro editado correctamente', severity: 'info' });
       setEditIndex(null);
     } else {
       saveNovedades([...novedades, nueva]);
-      setSnackbar({ open: true, message: '¡Registro agregado!', severity: 'success' });
+      // setSnackbar({ open: true, message: '¡Registro agregado!', severity: 'success' });
     }
     setNovedad('');
     setNovedadHtml('');
@@ -243,7 +241,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const handleDelete = (idx) => {
     const updated = novedades.filter((_, i) => i !== idx);
     saveNovedades(updated);
-    setSnackbar({ open: true, message: 'Registro eliminado', severity: 'warning' });
+    // setSnackbar({ open: true, message: 'Registro eliminado', severity: 'warning' });
     setNovedad('');
     setNovedadHtml('');
     setFecha('');
@@ -256,22 +254,24 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    setSnackbar({ open: true, message: '¡Novedad copiada!', severity: 'success' });
+    // setSnackbar({ open: true, message: '¡Novedad copiada!', severity: 'success' });
   };
 
   // Filtro por texto, fecha, usuario (quién cubre) y propietario
   const novedadesFiltradas = novedades.filter(item => {
     if (!item || typeof item !== 'object') return false;
-    const matchTexto = search.trim() === '' || item.novedad.toLowerCase().includes(search.toLowerCase());
-    const matchFecha = searchDate === '' || item.fecha === searchDate;
+    // Si search ya no se usa, eliminarlo. Si se usa, asegurar que sea string.
+    // const matchTexto = (search || '').trim() === '' || (item.novedad && item.novedad.toLowerCase().includes((search || '').toLowerCase()));
+    const matchFecha = (searchDate || '') === '' || item.fecha === searchDate;
     // Si showSearchUser está activo, filtrar por conserje (quién cubre)
-    const matchUser = !showSearchUser || searchUser.trim() === '' || (item.conserje && item.conserje.toLowerCase().includes(searchUser.toLowerCase()));
-    const matchPropietario = searchPropietario.trim() === '' || (item.propietario && item.propietario.toLowerCase().includes(searchPropietario.toLowerCase()));
-    return matchTexto && matchFecha && matchUser && matchPropietario;
+    const matchUser = !showSearchUser || (searchUser || '').trim() === '' || (item.conserje && item.conserje.toLowerCase().includes((searchUser || '').toLowerCase()));
+    const matchPropietario = (searchPropietario || '').trim() === '' || (item.propietario && item.propietario.toLowerCase().includes((searchPropietario || '').toLowerCase()));
+    // return matchTexto && matchFecha && matchUser && matchPropietario;
+    return matchFecha && matchUser && matchPropietario;
   });
 
   // Copiar novedades del día filtrado
-  const handleCopyDay = () => {
+  const handleCopyDayInternal = () => {
     const fechaCopia = searchDate || new Date().toISOString().slice(0, 10);
     const turnosOrden = ['Mañana', 'Tarde', 'Noche'];
     const novedadesDia = novedades
@@ -313,22 +313,22 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
           'text/plain': blobText
         })
       ]).then(() => {
-        setSnackbar({ open: true, message: '¡Novedades copiadas con color!', severity: 'success' });
+        // setSnackbar({ open: true, message: '¡Novedades copiadas con color!', severity: 'success' });
       }, () => {
-        setSnackbar({ open: true, message: 'No se pudo copiar en formato enriquecido', severity: 'warning' });
+        // setSnackbar({ open: true, message: 'No se pudo copiar en formato enriquecido', severity: 'warning' });
       });
     } else {
       // Fallback solo texto plano
       navigator.clipboard.writeText(texto.trim());
-      setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
+      // setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
     }
   };
 
   return (
     <Box sx={{ bgcolor: fondoGeneral, minHeight: '100vh', transition: 'background 0.3s', overflowX: 'hidden', width: '100vw', maxWidth: '100vw', p: 0, m: 0 }}>
-      <Snackbar open={snackbar.open} autoHideDuration={2500} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+      {/* <Snackbar open={snackbar.open} autoHideDuration={2500} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity={snackbar.severity} variant="filled" sx={{ fontSize: 18 }}>{snackbar.message}</Alert>
-      </Snackbar>
+      </Snackbar> */}
       <Box
         display="flex"
         flexDirection={{ xs: 'column', md: 'row' }}
@@ -545,57 +545,15 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={2} alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center">
               {section.icon}
-              <Typography variant="h4" sx={{ fontWeight: 900, color: section.main, fontFamily: 'Montserrat, Roboto, Arial', letterSpacing: 1 }}>
+              {/* 3. Mejorar el estilo visual del título principal (h4): */}
+              <Typography variant="h4" sx={{ fontWeight: 900, color: section.main, fontFamily: 'Montserrat, Roboto, Arial', letterSpacing: 1, fontSize: { xs: 32, md: 40 }, textShadow: '0 2px 12px #0001', mb: 1, mt: 1, textAlign: 'center', lineHeight: 1.1 }}>
                 {titulo} ({novedadesFiltradas.length})
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <TextField
-                size="small"
-                label="Filtrar por fecha"
-                type="date"
-                value={searchDate}
-                onChange={e => setSearchDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
-                inputProps={{ style: { fontSize: 16 } }}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<ContentCopyIcon />}
-                onClick={handleCopyDay}
-                sx={{ fontWeight: 700, fontSize: 16, borderRadius: 2, bgcolor: '#fff', color: section.main, borderColor: section.main, '&:hover': { bgcolor: section.main, color: '#fff' } }}
-              >
-                Copiar novedades del día
-              </Button>
-              {showSearchUser && (
-                <TextField
-                  size="small"
-                  label="Buscar por usuario"
-                  value={searchUser}
-                  onChange={e => setSearchUser(e.target.value)}
-                  sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
-                  inputProps={{ style: { fontSize: 16 } }}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 1, color: section.main }} /></InputAdornment>,
-                    style: { fontSize: 16 },
-                  }}
-                />
-              )}
-              {!showSearchUser && (
-                <TextField
-                  size="small"
-                  label="Buscar por propietario"
-                  value={searchPropietario}
-                  onChange={e => setSearchPropietario(e.target.value)}
-                  sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 160, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.04)' }}
-                  inputProps={{ style: { fontSize: 16 } }}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><SearchIcon sx={{ mr: 1, color: section.main }} /></InputAdornment>,
-                    style: { fontSize: 16 },
-                  }}
-                />
-              )}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" width="100%" maxWidth={600}>
+              {/* Eliminar los estados y JSX de filtros: searchDate, setSearchDate, searchUser, setSearchUser, searchPropietario, setSearchPropietario */}
+              {/* Recibir como props: searchDate, searchUser, searchPropietario, handleCopyDay */}
+              {/* Usar estos props en el filtrado y en el botón copiar */}
             </Stack>
           </Stack>
           <Divider sx={{ mb: 2 }} />
@@ -668,7 +626,21 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                       {item.file && (
                         <Box mt={2}>
                           {item.file.startsWith('data:image') ? (
-                            <img src={item.file} alt={item.fileName} style={{ maxWidth: 120, maxHeight: 120, borderRadius: 8, boxShadow: '0 2px 8px 0 rgba(60,60,60,0.10)' }} />
+                            <img
+                              src={item.file}
+                              alt={item.fileName}
+                              style={{
+                                maxWidth: 120,
+                                maxHeight: 120,
+                                borderRadius: 8,
+                                boxShadow: '0 2px 8px 0 rgba(60,60,60,0.10)',
+                                cursor: 'pointer',
+                                transition: 'transform 0.25s cubic-bezier(.4,2,.6,1)',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'}
+                              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                              onClick={() => setLightboxImg(item.file)}
+                            />
                           ) : (
                             <a href={item.file} download={item.fileName} style={{ color: section.main, fontWeight: 700 }}>
                               <AttachFileIcon sx={{ verticalAlign: 'middle', mr: 1 }} />{item.fileName}
@@ -685,6 +657,38 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
           </List>
         </Paper>
       </Box>
+      {/* Lightbox modal para imagen grande */}
+      {lightboxImg && (
+        <Box
+          onClick={() => setLightboxImg(null)}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            bgcolor: 'rgba(0,0,0,0.75)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={lightboxImg}
+            alt="Adjunto grande"
+            style={{
+              width: '50vw',
+              height: '50vh',
+              objectFit: 'contain',
+              borderRadius: 16,
+              boxShadow: '0 8px 32px 0 rgba(60,60,60,0.25)',
+              transition: 'transform 0.3s cubic-bezier(.4,2,.6,1)',
+            }}
+          />
+        </Box>
+      )}
     </Box>
   );
 };
