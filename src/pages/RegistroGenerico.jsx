@@ -255,18 +255,41 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     } else {
       saveNovedades([...novedades, nueva]);
       
-      // SweetAlert2 para agregado exitoso
-      Swal.fire({
-        title: '¡Novedad agregada!',
-        text: 'La novedad ha sido guardada correctamente',
-        icon: 'success',
-        background: '#f3f8ff',
-        color: '#2196f3',
-        confirmButtonColor: '#2196f3',
-        confirmButtonText: 'Excelente',
-        timer: 2000,
-        timerProgressBar: true
-      });
+      // Verificar si hay un filtro de fecha activo y si la nueva novedad no coincide
+      if (searchDate && searchDate !== '' && fecha !== searchDate) {
+        // Disparar evento para limpiar el filtro
+        window.dispatchEvent(new CustomEvent('limpiarFiltroFecha', { 
+          detail: { 
+            nuevaFecha: fecha,
+            filtroActivo: searchDate 
+          } 
+        }));
+        
+        Swal.fire({
+          title: '¡Novedad agregada!',
+          text: `La novedad ha sido guardada para la fecha ${fecha}. El filtro se ha limpiado para mostrar todas las novedades.`,
+          icon: 'success',
+          background: '#f3f8ff',
+          color: '#2196f3',
+          confirmButtonColor: '#2196f3',
+          confirmButtonText: 'Excelente',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      } else {
+        // SweetAlert2 para agregado exitoso normal
+        Swal.fire({
+          title: '¡Novedad agregada!',
+          text: 'La novedad ha sido guardada correctamente',
+          icon: 'success',
+          background: '#f3f8ff',
+          color: '#2196f3',
+          confirmButtonColor: '#2196f3',
+          confirmButtonText: 'Excelente',
+          timer: 2000,
+          timerProgressBar: true
+        });
+      }
     }
     
     setNovedad('');

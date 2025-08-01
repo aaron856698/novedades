@@ -6,6 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AppBar, Toolbar, Typography, Button, Box, Stack, TextField, InputAdornment } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import Swal from 'sweetalert2';
 
 const Novedades = React.lazy(() => import('./pages/Novedades'));
 const Eventos = React.lazy(() => import('./pages/Eventos'));
@@ -110,6 +112,21 @@ function App() {
     if (session && session.username) {
       setUser(session.username);
     }
+  }, []);
+
+  // Escuchar evento para limpiar filtro de fecha
+  useEffect(() => {
+    const handleLimpiarFiltro = (event) => {
+      setSearchDate('');
+      setSearchUser('');
+      setSearchPropietario('');
+    };
+    
+    window.addEventListener('limpiarFiltroFecha', handleLimpiarFiltro);
+    
+    return () => {
+      window.removeEventListener('limpiarFiltroFecha', handleLimpiarFiltro);
+    };
   }, []);
 
   const handleLogin = (username) => {
@@ -302,6 +319,47 @@ function App() {
                   >
                     Copiar novedades del día
                   </Button>
+                  {(searchDate || searchUser || searchPropietario) && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<ClearIcon sx={{ fontSize: 18 }} />}
+                      onClick={() => {
+                        setSearchDate('');
+                        setSearchUser('');
+                        setSearchPropietario('');
+                        Swal.fire({
+                          title: 'Filtro limpiado',
+                          text: 'Se han limpiado todos los filtros',
+                          icon: 'info',
+                          background: '#f3f8ff',
+                          color: '#2196f3',
+                          confirmButtonColor: '#2196f3',
+                          confirmButtonText: 'Entendido',
+                          timer: 1500,
+                          timerProgressBar: true
+                        });
+                      }}
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: 14,
+                        borderRadius: 2.5,
+                        borderColor: '#ff9800',
+                        color: '#ff9800',
+                        px: 2,
+                        py: 1.1,
+                        minWidth: 120,
+                        height: 40,
+                        '&:hover': { 
+                          borderColor: '#f57c00', 
+                          color: '#f57c00',
+                          bgcolor: '#fff3e0'
+                        },
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      Limpiar filtros
+                    </Button>
+                  )}
                 </Box>
               )}
               {/* Menú y cerrar sesión a la derecha */}
