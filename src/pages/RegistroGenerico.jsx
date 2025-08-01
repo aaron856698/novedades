@@ -439,7 +439,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   };
 
   return (
-    <Box sx={{ bgcolor: fondoGeneral, minHeight: '100vh', transition: 'background 0.3s', overflowX: 'hidden', width: '100vw', maxWidth: '100vw', p: 0, m: 0 }}>
+    <Box sx={{ bgcolor: fondoGeneral, height: 'calc(100vh - 200px)', transition: 'background 0.3s', overflowX: 'hidden', width: '100vw', maxWidth: '100vw', p: 0, m: 0 }}>
       {/* <Snackbar open={snackbar.open} autoHideDuration={2500} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity={snackbar.severity} variant="filled" sx={{ fontSize: 18 }}>{snackbar.message}</Alert>
       </Snackbar> */}
@@ -449,7 +449,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
         alignItems={{ xs: 'stretch', md: 'stretch' }}
         justifyContent="center"
         width="100vw"
-        minHeight="calc(100vh - 64px)"
+        height="100%"
         maxWidth="100vw"
         px={{ xs: 1, md: 4 }}
         py={4}
@@ -469,7 +469,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
             maxWidth: 420,
             width: { xs: '100%', md: 400 },
             borderRadius: 5,
-            height: { md: '100%' },
+            height: 'calc(100vh - 280px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-start',
@@ -480,6 +480,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
             boxSizing: 'border-box',
             bgcolor: section.bg,
             boxShadow: '0 8px 32px 0 rgba(60,60,60,0.10)',
+            overflowY: 'auto',
           }}
         >
           <Box display="flex" alignItems="center" mb={2}>
@@ -645,8 +646,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
             p: 4,
             flex: 1,
             minWidth: { xs: '100%', md: 0 },
-            maxHeight: { xs: 'none', md: 'calc(100vh - 120px)' },
-            height: { md: '100%' },
+            height: 'calc(100vh - 280px)',
             overflowY: 'auto',
             borderRadius: 5,
             bgcolor: section.bg,

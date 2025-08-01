@@ -187,10 +187,10 @@ function App() {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', overflowX: 'hidden', position: 'relative' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', overflowX: 'hidden', position: 'relative', pt: !isAuthPage ? '200px' : 0 }}>
       {isAuthPage && <AnimatedBackground />}
       {!isAuthPage && (
-        <AppBar position="static" elevation={2} sx={{ mb: 0, borderRadius: 0, width: '100%', bgcolor: sectionColor.bg, color: sectionColor.text, transition: 'background 0.3s' }}>
+        <AppBar position="fixed" elevation={2} sx={{ mb: 0, borderRadius: 0, width: '100%', bgcolor: sectionColor.bg, color: sectionColor.text, transition: 'background 0.3s', zIndex: 1200 }}>
           <Toolbar sx={{ flexDirection: 'column', alignItems: 'stretch', py: 2, px: { xs: 1, md: 4 }, minHeight: 0 }}>
             {/* Fila superior: filtro a la izquierda, menú y cerrar sesión a la derecha */}
             <Box width="100%" display="flex" alignItems="center" justifyContent="space-between" mb={1}>
