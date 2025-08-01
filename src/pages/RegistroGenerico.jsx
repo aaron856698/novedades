@@ -126,6 +126,19 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     };
   }, []);
 
+  // Escuchar el evento de copiar novedades del día
+  useEffect(() => {
+    const handleCopyEvent = () => {
+      handleCopyDayInternal();
+    };
+    
+    window.addEventListener('copyNovedadesDelDia', handleCopyEvent);
+    
+    return () => {
+      window.removeEventListener('copyNovedadesDelDia', handleCopyEvent);
+    };
+  }, [searchDate, novedades]); // Dependencias para que se actualice cuando cambien los datos
+
   const handleNovedadChange = (e) => {
     let value = e.target.value.replace(/,\s?/g, '\n');
     setNovedad(value);
@@ -346,13 +359,16 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   // Filtro por texto, fecha, usuario (quién cubre) y propietario
   const novedadesFiltradas = novedades.filter(item => {
     if (!item || typeof item !== 'object') return false;
-    // Si search ya no se usa, eliminarlo. Si se usa, asegurar que sea string.
-    // const matchTexto = (search || '').trim() === '' || (item.novedad && item.novedad.toLowerCase().includes((search || '').toLowerCase()));
-    const matchFecha = (searchDate || '') === '' || item.fecha === searchDate;
+    
+    // Filtro por fecha - si searchDate está vacío, mostrar todas las fechas
+    const matchFecha = !searchDate || searchDate === '' || item.fecha === searchDate;
+    
     // Si showSearchUser está activo, filtrar por conserje (quién cubre)
-    const matchUser = !showSearchUser || (searchUser || '').trim() === '' || (item.conserje && item.conserje.toLowerCase().includes((searchUser || '').toLowerCase()));
-    const matchPropietario = (searchPropietario || '').trim() === '' || (item.propietario && item.propietario.toLowerCase().includes((searchPropietario || '').toLowerCase()));
-    // return matchTexto && matchFecha && matchUser && matchPropietario;
+    const matchUser = !showSearchUser || !searchUser || searchUser.trim() === '' || (item.conserje && item.conserje.toLowerCase().includes(searchUser.toLowerCase()));
+    
+    // Filtro por propietario
+    const matchPropietario = !searchPropietario || searchPropietario.trim() === '' || (item.propietario && item.propietario.toLowerCase().includes(searchPropietario.toLowerCase()));
+    
     return matchFecha && matchUser && matchPropietario;
   });
 
