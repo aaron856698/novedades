@@ -66,3 +66,31 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Estilos personalizados para SweetAlert2 */
+.swal2-title-custom {
+  font-family: 'Montserrat, Roboto, Arial' !important;
+  font-weight: 900 !important;
+  font-size: 28px !important;
+  letter-spacing: 1px !important;
+}
+
+.swal2-confirm-custom {
+  font-family: 'Montserrat, Roboto, Arial' !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  border-radius: 8px !important;
+  padding: 12px 24px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.swal2-popup {
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px 0 rgba(60,60,60,0.15) !important;
+}
+
+.swal2-html-container {
+  font-size: 18px !important;
+  font-weight: 500 !important;
+}

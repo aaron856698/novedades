@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Box, Typography, Button, TextField, Paper, IconButton, List, ListItem, ListItemText, MenuItem, Select, InputLabel, FormControl, Divider, Stack, InputAdornment, useTheme, Chip, Snackbar, Alert, Avatar
+  Box, Typography, Button, TextField, Paper, IconButton, List, ListItem, ListItemText, MenuItem, Select, InputLabel, FormControl, Divider, Stack, InputAdornment, useTheme, Chip, Avatar
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -29,7 +29,7 @@ const highlightColors = [
 
 const sectionStyles = {
   primary: {
-    main: '#43a047', bg: '#f8fff5', icon: <AnnouncementIcon fontSize="large" sx={{ color: '#43a047', mr: 1 }} />,
+    main: '#2196f3', bg: '#f3f8ff', icon: <AnnouncementIcon fontSize="large" sx={{ color: '#2196f3', mr: 1 }} />,
   },
   secondary: {
     main: '#e57373', bg: '#fff6f6', icon: <EventNoteIcon fontSize="large" sx={{ color: '#e57373', mr: 1 }} />,
@@ -187,24 +187,75 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   };
 
   const handleAdd = () => {
-    if (!novedadHtml.trim() || !fecha || !turno || (!hideConserje && !conserje)) return;
+    if (!novedadHtml.trim() || !fecha || !turno || (!hideConserje && !conserje)) {
+      // SweetAlert2 para campos faltantes
+      Swal.fire({
+        title: 'Campos incompletos',
+        text: 'Por favor completa todos los campos requeridos',
+        icon: 'warning',
+        background: '#fffef6',
+        color: '#ffd600',
+        confirmButtonColor: '#ffd600',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    
     // Validar campos extra si existen
     if (extraFields) {
       for (const key of Object.keys(extraFields)) {
-        if (!extra[key] || extra[key].toString().trim() === '') return;
+        if (!extra[key] || extra[key].toString().trim() === '') {
+          Swal.fire({
+            title: 'Campos incompletos',
+            text: `Por favor completa el campo: ${extraFields[key].label}`,
+            icon: 'warning',
+            background: '#fffef6',
+            color: '#ffd600',
+            confirmButtonColor: '#ffd600',
+            confirmButtonText: 'Entendido'
+          });
+          return;
+        }
       }
     }
+    
     const nueva = { novedadHtml, fecha, file, fileName, user, turno, conserje, ...extra };
     if (editIndex !== null) {
       const updated = [...novedades];
       updated[editIndex] = nueva;
       saveNovedades(updated);
-      // setSnackbar({ open: true, message: 'Registro editado correctamente', severity: 'info' });
+      
+      // SweetAlert2 para edición exitosa
+      Swal.fire({
+        title: '¡Registro actualizado!',
+        text: 'La novedad ha sido editada correctamente',
+        icon: 'success',
+        background: '#f3f8ff',
+        color: '#2196f3',
+        confirmButtonColor: '#2196f3',
+        confirmButtonText: 'Perfecto',
+        timer: 2000,
+        timerProgressBar: true
+      });
+      
       setEditIndex(null);
     } else {
       saveNovedades([...novedades, nueva]);
-      // setSnackbar({ open: true, message: '¡Registro agregado!', severity: 'success' });
+      
+      // SweetAlert2 para agregado exitoso
+      Swal.fire({
+        title: '¡Novedad agregada!',
+        text: 'La novedad ha sido guardada correctamente',
+        icon: 'success',
+        background: '#f3f8ff',
+        color: '#2196f3',
+        confirmButtonColor: '#2196f3',
+        confirmButtonText: 'Excelente',
+        timer: 2000,
+        timerProgressBar: true
+      });
     }
+    
     setNovedad('');
     setNovedadHtml('');
     setFecha('');
@@ -239,22 +290,57 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   };
 
   const handleDelete = (idx) => {
-    const updated = novedades.filter((_, i) => i !== idx);
-    saveNovedades(updated);
-    // setSnackbar({ open: true, message: 'Registro eliminado', severity: 'warning' });
-    setNovedad('');
-    setNovedadHtml('');
-    setFecha('');
-    setFile(null);
-    setFileName('');
-    setTurno('');
-    setConserje('');
-    setEditIndex(null);
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción no se puede revertir.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      background: '#fffef6',
+      color: '#ffd600',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updated = novedades.filter((_, i) => i !== idx);
+        saveNovedades(updated);
+        Swal.fire({
+          title: '¡Registro eliminado!',
+          text: 'La novedad ha sido eliminada.',
+          icon: 'success',
+          background: '#f8fff5',
+          color: '#dc3545',
+          confirmButtonColor: '#dc3545',
+          confirmButtonText: 'Entendido',
+          timer: 2000,
+          timerProgressBar: true
+        });
+        setNovedad('');
+        setNovedadHtml('');
+        setFecha('');
+        setFile(null);
+        setFileName('');
+        setTurno('');
+        setConserje('');
+        setEditIndex(null);
+      }
+    });
   };
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    // setSnackbar({ open: true, message: '¡Novedad copiada!', severity: 'success' });
+    Swal.fire({
+      title: '¡Novedad copiada!',
+      text: 'La novedad ha sido copiada al portapapeles.',
+      icon: 'success',
+      background: '#f3f8ff',
+      color: '#2196f3',
+      confirmButtonColor: '#2196f3',
+      confirmButtonText: 'Excelente',
+      timer: 2000,
+      timerProgressBar: true
+    });
   };
 
   // Filtro por texto, fecha, usuario (quién cubre) y propietario
@@ -313,14 +399,42 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
           'text/plain': blobText
         })
       ]).then(() => {
-        // setSnackbar({ open: true, message: '¡Novedades copiadas con color!', severity: 'success' });
+        Swal.fire({
+          title: '¡Novedades copiadas con color!',
+          text: 'Las novedades han sido copiadas al portapapeles en formato enriquecido.',
+          icon: 'success',
+          background: '#f3f8ff',
+          color: '#2196f3',
+          confirmButtonColor: '#2196f3',
+          confirmButtonText: 'Excelente',
+          timer: 2000,
+          timerProgressBar: true
+        });
       }, () => {
-        // setSnackbar({ open: true, message: 'No se pudo copiar en formato enriquecido', severity: 'warning' });
+        Swal.fire({
+          title: 'No se pudo copiar en formato enriquecido',
+          text: 'Las novedades han sido copiadas al portapapeles en formato de texto plano.',
+          icon: 'warning',
+          background: '#fffef6',
+          color: '#ffd600',
+          confirmButtonColor: '#ffd600',
+          confirmButtonText: 'Entendido'
+        });
       });
     } else {
       // Fallback solo texto plano
       navigator.clipboard.writeText(texto.trim());
-      // setSnackbar({ open: true, message: '¡Novedades copiadas!', severity: 'success' });
+      Swal.fire({
+        title: '¡Novedades copiadas!',
+        text: 'Las novedades han sido copiadas al portapapeles en formato de texto plano.',
+        icon: 'success',
+        background: '#f3f8ff',
+        color: '#2196f3',
+        confirmButtonColor: '#2196f3',
+        confirmButtonText: 'Excelente',
+        timer: 2000,
+        timerProgressBar: true
+      });
     }
   };
 

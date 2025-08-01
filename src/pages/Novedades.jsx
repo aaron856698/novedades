@@ -1,7 +1,7 @@
 import React from 'react';
 import RegistroGenerico from './RegistroGenerico';
 
-const Novedades = ({ user, onLogout }) => (
+const Novedades = ({ user, onLogout, searchDate, searchUser, handleCopyDay }) => (
   <RegistroGenerico
     user={user}
     onLogout={onLogout}
@@ -9,6 +9,9 @@ const Novedades = ({ user, onLogout }) => (
     titulo="Novedades"
     color="primary"
     showSearchUser={true}
+    searchDate={searchDate}
+    searchUser={searchUser}
+    handleCopyDay={handleCopyDay}
   />
 );
 

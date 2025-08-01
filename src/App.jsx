@@ -13,14 +13,14 @@ const Reclamos = React.lazy(() => import('./pages/Reclamos'));
 const Reservas = React.lazy(() => import('./pages/Reservas'));
 
 const menuItems = [
-  { label: 'Novedades', path: '/novedades', color: '#43a047' },
+  { label: 'Novedades', path: '/novedades', color: '#2196f3' },
   { label: 'Eventos', path: '/eventos', color: '#e57373' },
   { label: 'Reclamos', path: '/reclamos', color: '#ffd600', text: '#333' },
   { label: 'Reservas', path: '/reservas', color: '#ba68c8' },
 ];
 
 function getSectionColor(pathname) {
-  if (pathname.startsWith('/novedades')) return { bg: '#43a047', text: '#fff' };
+  if (pathname.startsWith('/novedades')) return { bg: '#2196f3', text: '#fff' };
   if (pathname.startsWith('/eventos')) return { bg: '#e57373', text: '#fff' };
   if (pathname.startsWith('/reclamos')) return { bg: '#ffd600', text: '#333' };
   if (pathname.startsWith('/reservas')) return { bg: '#ba68c8', text: '#fff' };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Link, Paper, Snackbar, Alert } from '@mui/material';
+import { Box, Button, TextField, Typography, Link, Paper } from '@mui/material';
 import { motion } from 'framer-motion';
 
 const AnimatedBackground = () => (
@@ -69,20 +69,46 @@ const AnimatedBackground = () => (
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const users = JSON.parse(localStorage.getItem('users') || '{}');
     if (users[username] && users[username].password === password) {
       localStorage.setItem('session', JSON.stringify({ username }));
-      setSuccess(true);
-      setTimeout(() => {
+      
+      // SweetAlert2 personalizado para login exitoso
+      Swal.fire({
+        title: '¡Bienvenido!',
+        text: `Hola ${username}, has iniciado sesión correctamente`,
+        icon: 'success',
+        background: '#f8fff5',
+        color: '#43a047',
+        confirmButtonColor: '#43a047',
+        confirmButtonText: 'Continuar',
+        showClass: {
+          popup: 'animate__animated animate__fadeInDown'
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOutUp'
+        },
+        customClass: {
+          title: 'swal2-title-custom',
+          confirmButton: 'swal2-confirm-custom'
+        }
+      }).then(() => {
         onLogin(username);
-      }, 1200);
+      });
     } else {
-      setError('Usuario o contraseña incorrectos');
+      // SweetAlert2 para error de login
+      Swal.fire({
+        title: 'Error de autenticación',
+        text: 'Usuario o contraseña incorrectos',
+        icon: 'error',
+        background: '#fff6f6',
+        color: '#e57373',
+        confirmButtonColor: '#e57373',
+        confirmButtonText: 'Intentar de nuevo'
+      });
     }
   };
 
@@ -120,11 +146,6 @@ const Login = ({ onLogin }) => {
           backdropFilter: 'blur(2px)',
         }}
       >
-        <Snackbar open={success} autoHideDuration={1200} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-          <Alert severity="success" variant="filled" sx={{ fontSize: 18, fontWeight: 700 }}>
-            ¡Bienvenido, {username}!
-          </Alert>
-        </Snackbar>
         <Typography
           variant="h3"
           align="center"
@@ -168,7 +189,6 @@ const Login = ({ onLogin }) => {
               mb: 2,
             }}
           />
-          {error && <Typography color="error" variant="body2" align="center">{error}</Typography>}
           <Button
             type="submit"
             fullWidth
