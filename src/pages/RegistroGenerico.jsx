@@ -255,9 +255,10 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
       return;
     }
     
-    // Validar campos extra si existen
+    // Validar campos extra si existen (excepto horaEntregada que es opcional)
     if (extraFields) {
       for (const key of Object.keys(extraFields)) {
+        if (key === 'horaEntregada') continue; // opcional
         if (!extra[key] || extra[key].toString().trim() === '') {
           Swal.fire({
             title: 'Campos incompletos',
@@ -273,7 +274,17 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
       }
     }
     
-    const nueva = { novedadHtml, fecha, file, fileName, user, turno, conserje, ...extra };
+    // Asegurar estado Pendiente si no se cargó horaEntregada
+    let adjustedExtra = { ...extra };
+    if (!adjustedExtra.horaEntregada || adjustedExtra.horaEntregada.toString().trim() === '') {
+      adjustedExtra.estado = 'Pendiente';
+      adjustedExtra.horaEntregada = '';
+      if (extraFields && extraFields.estado && typeof extraFields.estado.onChange === 'function') {
+        extraFields.estado.onChange('Pendiente');
+      }
+    }
+    
+    const nueva = { novedadHtml, fecha, file, fileName, user, turno, conserje, ...adjustedExtra };
     if (editIndex !== null) {
       const updated = [...novedades];
       updated[editIndex] = nueva;
