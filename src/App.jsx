@@ -156,8 +156,8 @@ function App() {
       .sort((a, b) => turnosOrden.indexOf(a.turno) - turnosOrden.indexOf(b.turno));
     let texto = `Fecha: ${fechaCopia}\n`;
     let html = `<b>Fecha: ${fechaCopia}</b><br/>`;
-    const cleanTags = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, '$2') : '';
-    const parseHighlight = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, (match, tag, content) => {
+    const cleanTags = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\]([\s\S]*?)\[\/\1\]/g, '$2') : '';
+    const parseHighlight = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\]([\s\S]*?)\[\/\1\]/g, (match, tag, content) => {
       const colorMap = { yellow: '#fff59d', green: '#a5d6a7', blue: '#81d4fa', orange: '#ffcc80', pink: '#f8bbd0' };
       const color = colorMap[tag] || '#fff59d';
       return `<span style=\\"background:${color};padding:2px 4px;border-radius:3px\\">${content}</span>`;

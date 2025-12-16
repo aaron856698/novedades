@@ -269,6 +269,19 @@ const Login = ({ onLogin }) => {
             Regístrate
           </Link>
         </Typography>
+        <Typography
+          align="center"
+          sx={{
+            mt: 4,
+            fontSize: 14,
+            color: '#6b7280',
+            fontWeight: 600,
+            letterSpacing: 0.5,
+            textTransform: 'uppercase',
+          }}
+        >
+          Desarrollado por Aaron Garcen — Fullstack Developer
+        </Typography>
       </Paper>
     </Box>
   );

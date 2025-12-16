@@ -25,6 +25,20 @@ const conserjes = ["aaron", "maria", "lisa", "martin", "sebastian", "guardia", "
 const turnoColors = { "Mañana": '#81d4fa', "Tarde": '#ffd54f', "Noche": '#9575cd' };
 const conserjeColors = { aaron: '#43a047', maria: '#e57373', lisa: '#ba68c8', martin: '#ffd600', sebastian: '#00bcd4', guardia: '#8d6e63', fredy: '#ff6b6b', gaston: '#4ecdc4', enzo: '#95e1d3', emiliano: '#f38181' };
 
+// Colores determinísticos por usuario
+const userPalette = ['#42a5f5', '#66bb6a', '#ffb74d', '#ab47bc', '#26c6da', '#ef5350', '#8d6e63', '#7e57c2'];
+const getUserColor = (name = '') => {
+  const key = name.toString().trim().toLowerCase();
+  if (!key) return '#78909c';
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % userPalette.length;
+  return userPalette[idx];
+};
+
 const highlightColors = [
   { name: 'AMA', color: '#fff59d' },
   { name: 'VER', color: '#a5d6a7' },
@@ -210,7 +224,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   // Parsear marcadores a HTML para mostrar en la lista
   function parseHighlight(text) {
     if (!text) return '';
-    return text.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, (match, tag, content) => {
+    return text.replace(/\[(yellow|green|blue|orange|pink)\]([\s\S]*?)\[\/\1\]/g, (match, tag, content) => {
       const color = colorMap[tag] || '#fff59d';
       return `<span style="background:${color};padding:2px 4px;border-radius:3px">${content}</span>`;
     });
@@ -524,10 +538,10 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
       .sort((a, b) => turnosOrden.indexOf(a.turno) - turnosOrden.indexOf(b.turno));
     let texto = `Fecha: ${fechaCopia}\n`;
     let html = `<b>Fecha: ${fechaCopia}</b><br/>`;
-    // Función para limpiar los tags de color
-    const cleanTags = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, '$2') : '';
-    // Función para parsear a HTML
-    const parseHighlight = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\](.*?)\[\/\1\]/g, (match, tag, content) => {
+    // Función para limpiar los tags de color (soporta saltos de línea)
+    const cleanTags = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\]([\s\S]*?)\[\/\1\]/g, '$2') : '';
+    // Función para parsear a HTML (soporta saltos de línea)
+    const parseHighlight = (str) => str ? str.replace(/\[(yellow|green|blue|orange|pink)\]([\s\S]*?)\[\/\1\]/g, (match, tag, content) => {
       const color = colorMap[tag] || '#fff59d';
       return `<span style=\"background:${color};padding:2px 4px;border-radius:3px\">${content}</span>`;
     }) : '';
@@ -891,11 +905,11 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                     transition: { duration: 0.2 }
                   }}
                   secondaryAction={
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                       <IconButton 
                         edge="end" 
                         aria-label="copy" 
-                        onClick={() => handleCopy(item.novedad)}
+                        onClick={() => handleCopy(item.novedadHtml || item.novedad || '')}
                         sx={{
                           transition: 'all 0.2s',
                           '&:hover': { 
@@ -945,6 +959,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                     bgcolor: '#fff',
                     boxShadow: '0 2px 12px 0 rgba(60,60,60,0.08)',
                     p: 3,
+                    pr: { xs: 13, md: 16 }, // más espacio para que el texto no toque los íconos
                     alignItems: 'flex-start',
                     wordBreak: 'break-word',
                     minHeight: 80,
@@ -1011,13 +1026,13 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                       component={motion.div}
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       sx={{ 
-                        bgcolor: section.main + '20', 
-                        color: section.main, 
-                        fontWeight: 700, 
+                        bgcolor: `${getUserColor(item.user || user)}22`, 
+                        color: getUserColor(item.user || user), 
+                        fontWeight: 800, 
                         width: 36, 
                         height: 36, 
                         fontSize: 18,
-                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.1)',
+                        boxShadow: `0 2px 8px 0 ${getUserColor(item.user || user)}44`,
                         transition: 'all 0.2s',
                       }}
                     >
@@ -1025,19 +1040,119 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                     </Avatar>
                   </Stack>
                   <ListItemText
+                    sx={{ mr: { xs: 6.5, md: 8.5 } }} // margen a la derecha para separar texto de acciones
                     primary={<>
-                      <Typography variant="h6" sx={{ fontWeight: 700, wordBreak: 'break-word', whiteSpace: 'pre-line', mb: 1, fontSize: 22, fontFamily: 'Montserrat, Roboto, Arial' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 700,
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                          whiteSpace: 'pre-line',
+                          mb: 1,
+                          fontSize: 22,
+                          lineHeight: 1.45,
+                          fontFamily: 'Montserrat, Roboto, Arial',
+                          pr: { xs: 0, md: 1 },
+                        }}
+                      >
                         <span dangerouslySetInnerHTML={{ __html: parseHighlight(item.novedadHtml || item.novedad) }} />
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 18, mt: 1 }}>
-                        Fecha: <b>{item.fecha || '-'}</b> | Turno: <b>{item.turno || '-'}</b> | Cubre: <b>{item.conserje ? item.conserje.charAt(0).toUpperCase() + item.conserje.slice(1) : '-'}</b>
+                      <Box
+                        component={motion.div}
+                        initial={{ opacity: 0.9, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.01 }}
+                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        sx={{
+                          mt: 1,
+                          display: 'inline-flex',
+                          flexWrap: 'wrap',
+                          gap: 1.2,
+                          alignItems: 'center',
+                          background: `linear-gradient(135deg, ${section.main}12 0%, ${section.main}05 40%, #ffffff 100%)`,
+                          px: 1.75,
+                          py: 1.1,
+                          borderRadius: 12,
+                          boxShadow: `0 10px 24px -12px ${section.main}80`,
+                          border: `1px solid ${section.main}1f`,
+                          backdropFilter: 'blur(2px)',
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: 16.5,
+                            fontWeight: 700,
+                            background: `linear-gradient(120deg, ${section.main}, #7e57c2, ${section.main})`,
+                            backgroundSize: '200% 200%',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            animation: 'pulseText 6s ease-in-out infinite',
+                            '@keyframes pulseText': {
+                              '0%': { backgroundPosition: '0% 50%' },
+                              '50%': { backgroundPosition: '100% 50%' },
+                              '100%': { backgroundPosition: '0% 50%' },
+                            },
+                          }}
+                        >
+                          Fecha: <b>{item.fecha || '-'}</b>
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: 16.5,
+                            fontWeight: 700,
+                            background: `linear-gradient(120deg, ${section.main}, #7e57c2, ${section.main})`,
+                            backgroundSize: '200% 200%',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            animation: 'pulseText 6s ease-in-out infinite',
+                          }}
+                        >
+                          Turno: <b>{item.turno || '-'}</b>
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: 16.5,
+                            fontWeight: 700,
+                            background: `linear-gradient(120deg, ${section.main}, #7e57c2, ${section.main})`,
+                            backgroundSize: '200% 200%',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            animation: 'pulseText 6s ease-in-out infinite',
+                          }}
+                        >
+                          Cubre: <b>{item.conserje ? item.conserje.charAt(0).toUpperCase() + item.conserje.slice(1) : '-'}</b>
+                        </Typography>
                         {/* Mostrar campos extra si existen */}
                         {extraFields && Object.entries(extraFields).map(([key, field]) => {
                           // Excluir propietario, horaRecibida y horaEntregada (se muestran aparte)
                           if (key === 'propietario' || key === 'horaRecibida' || key === 'horaEntregada') return null;
-                          return <span key={key}> | {field.label}: <b>{item[key] || '-'}</b></span>;
+                          return (
+                            <Typography
+                              key={key}
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{
+                                fontSize: 16.5,
+                                fontWeight: 700,
+                                background: `linear-gradient(120deg, ${section.main}, #7e57c2, ${section.main})`,
+                                backgroundSize: '200% 200%',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                animation: 'pulseText 6s ease-in-out infinite',
+                              }}
+                            >
+                              {field.label}: <b>{item[key] || '-'}</b>
+                            </Typography>
+                          );
                         })}
-                      </Typography>
+                      </Box>
                       {/* Mostrar horas de forma destacada si existen */}
                       {(item.horaRecibida || item.horaEntregada) && (
                         <Box mt={1} display="flex" gap={2} flexWrap="wrap">
@@ -1108,7 +1223,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                               }}
                             />
                           )}
-                          {item.estado && (
+                          {item.estado && storageKeyPrefix !== 'novedades_' && (
                             <Chip
                               label={`Estado: ${item.estado}`}
                               size="small"
