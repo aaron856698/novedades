@@ -30,7 +30,7 @@ function getSectionColor(pathname) {
 }
 
 function getSectionTitle(pathname) {
-  if (pathname.startsWith('/novedades')) return 'Registro de novedades';
+  if (pathname.startsWith('/novedades')) return 'Novedades';
   if (pathname.startsWith('/eventos')) return 'Registro de eventos';
   if (pathname.startsWith('/reclamos')) return 'Registro de reclamos';
   if (pathname.startsWith('/paqueteria')) return 'Gestión de paquetería';
@@ -395,6 +395,40 @@ function App() {
                         {item.label}
                       </Button>
                     ))}
+                    <Button
+                      variant="contained"
+                      onClick={() => window.dispatchEvent(new CustomEvent('exportarDatos'))}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: '#fff',
+                        bgcolor: '#7e57c2', // violeta
+                        px: 2.5,
+                        py: 0.8,
+                        borderRadius: 2,
+                        boxShadow: '0 2px 10px 0 rgba(126,87,194,0.35)',
+                        '&:hover': { bgcolor: '#6a44b0' }
+                      }}
+                    >
+                      Exportar
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => window.dispatchEvent(new CustomEvent('importarDatos'))}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: '#fff',
+                        bgcolor: '#8bc34a', // verde manzana
+                        px: 2.5,
+                        py: 0.8,
+                        borderRadius: 2,
+                        boxShadow: '0 2px 10px 0 rgba(139,195,74,0.35)',
+                        '&:hover': { bgcolor: '#7cb342' }
+                      }}
+                    >
+                      Importar
+                    </Button>
                   </Stack>
                 )}
                 {user && (
@@ -406,7 +440,18 @@ function App() {
             </Box>
             {/* Título debajo, centrado */}
             <Box width="100%" display="flex" justifyContent="center" alignItems="center" mb={2} mt={1}>
-              <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: 1, color: sectionColor.text, textAlign: 'center' }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 900,
+                  letterSpacing: 1,
+                  color: sectionColor.text,
+                  textAlign: 'center',
+                  textDecoration: location.pathname.startsWith('/novedades') ? 'underline' : 'none',
+                  textDecorationThickness: location.pathname.startsWith('/novedades') ? '0.14em' : undefined,
+                  textUnderlineOffset: location.pathname.startsWith('/novedades') ? 6 : undefined,
+                }}
+              >
                 {sectionTitle}
               </Typography>
             </Box>

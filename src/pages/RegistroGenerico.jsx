@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box, Typography, Button, TextField, Paper, IconButton, List, ListItem, ListItemText, MenuItem, Select, InputLabel, FormControl, Divider, Stack, InputAdornment, useTheme, Chip, Avatar
 } from '@mui/material';
@@ -74,6 +74,28 @@ const colorMap = {
 };
 
 const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje, showSearchUser, searchDate, searchUser, searchPropietario, handleCopyDay, propietarioLabel }) => {
+  // Singularizar título (ej: Novedades -> Novedad)
+  const singularTitulo = useMemo(() => {
+    if (!titulo) return 'Registro';
+    const lower = titulo.toLowerCase();
+    if (lower.endsWith('es')) return titulo.slice(0, -2);
+    if (lower.endsWith('s')) return titulo.slice(0, -1);
+    return titulo;
+  }, [titulo]);
+  const singularTituloLower = singularTitulo.charAt(0).toLowerCase() + singularTitulo.slice(1);
+  const displayUser = useMemo(() => {
+    // Conservamos cálculo por compatibilidad, aunque el mensaje ya no muestra nombre
+    const sessionUser = (() => {
+      try {
+        const s = JSON.parse(localStorage.getItem('session'));
+        return s && s.username ? s.username : '';
+      } catch (_) {
+        return '';
+      }
+    })();
+    const name = sessionUser || user || 'Usuario';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }, [user]);
   const [novedad, setNovedad] = useState('');
   const [novedadHtml, setNovedadHtml] = useState('');
   const [novedades, setNovedades] = useState([]);
@@ -92,6 +114,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const [conserje, setConserje] = useState('');
   // 1. Agregar estado para lightbox de imagen
   const [lightboxImg, setLightboxImg] = useState(null);
+  const importInputRef = useRef(null);
 
   const section = sectionStyles[color] || sectionStyles.primary;
   const fondoGeneral = '#fffde7';
@@ -136,16 +159,24 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     };
   }, []);
 
-  // Escuchar el evento de copiar novedades del día
+  // Escuchar eventos globales
   useEffect(() => {
-    const handleCopyEvent = () => {
-      handleCopyDayInternal();
+    const handleCopyEvent = () => handleCopyDayInternal();
+    const handleExportEvent = () => handleExport();
+    const handleImportEvent = () => {
+      if (importInputRef.current) {
+        importInputRef.current.click();
+      }
     };
-    
+
     window.addEventListener('copyNovedadesDelDia', handleCopyEvent);
-    
+    window.addEventListener('exportarDatos', handleExportEvent);
+    window.addEventListener('importarDatos', handleImportEvent);
+
     return () => {
       window.removeEventListener('copyNovedadesDelDia', handleCopyEvent);
+      window.removeEventListener('exportarDatos', handleExportEvent);
+      window.removeEventListener('importarDatos', handleImportEvent);
     };
   }, [searchDate, novedades]); // Dependencias para que se actualice cuando cambien los datos
 
@@ -277,26 +308,26 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
         
         Swal.fire({
           title: '¡Novedad agregada!',
-          text: `La novedad ha sido guardada para la fecha ${fecha}. El filtro se ha limpiado para mostrar todas las novedades.`,
+          text: 'Las novedades fueron guardadas con éxito. ¡Buen descanso, vuelve pronto!',
           icon: 'success',
           background: '#f3f8ff',
           color: '#2196f3',
           confirmButtonColor: '#2196f3',
           confirmButtonText: 'Excelente',
-          timer: 3000,
+          timer: 5000,
           timerProgressBar: true
         });
       } else {
         // SweetAlert2 para agregado exitoso normal
         Swal.fire({
           title: '¡Novedad agregada!',
-          text: 'La novedad ha sido guardada correctamente',
+          text: 'Las novedades fueron guardadas con éxito. ¡Buen descanso, vuelve pronto!',
           icon: 'success',
           background: '#f3f8ff',
           color: '#2196f3',
           confirmButtonColor: '#2196f3',
           confirmButtonText: 'Excelente',
-          timer: 2000,
+          timer: 5000,
           timerProgressBar: true
         });
       }
@@ -609,8 +640,17 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
         >
           <Box display="flex" alignItems="center" mb={2}>
             {section.icon}
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 900, color: section.main, fontFamily: 'Montserrat, Roboto, Arial', letterSpacing: 1 }}>
-              Agregar {titulo.slice(0, -1).toLowerCase()}
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{
+                fontWeight: 900,
+                color: section.main,
+                fontFamily: 'Poppins, Montserrat, Roboto, Arial',
+                letterSpacing: 1,
+              }}
+            >
+              Agregar
             </Typography>
           </Box>
           <Box display="flex" flexDirection="column" gap={2}>
@@ -664,7 +704,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
               ))}
             </Box>
             <TextField
-              label={titulo.slice(0, -1)}
+              label={singularTitulo}
               fullWidth
               value={novedad}
               onChange={handleNovedadChange}
@@ -818,7 +858,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
               </Button>
               <Button component="label" variant="outlined" startIcon={<FileUploadIcon />} sx={{ borderRadius: 2, fontWeight: 600 }}>
                 Importar
-                <input type="file" hidden accept="application/json" onChange={handleImportFile} />
+                <input ref={importInputRef} type="file" hidden accept="application/json" onChange={handleImportFile} />
               </Button>
             </Stack>
           </Stack>
