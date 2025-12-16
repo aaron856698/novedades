@@ -72,11 +72,48 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    if (users[username] && users[username].password === password) {
-      localStorage.setItem('session', JSON.stringify({ username }));
+    const u = (username || '').trim();
+    const pwd = (password || '').trim();
+    const normKey = (s) => (s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    let users = {};
+    try {
+      users = JSON.parse(localStorage.getItem('users') || '{}');
+    } catch (_) {
+      users = {};
+    }
+    const keyLower = u.toLowerCase();
+    const keyNorm = normKey(u);
+    let record = null;
+    let matchedKey = null;
+    if (users[u]) { record = users[u]; matchedKey = u; }
+    else if (users[keyLower]) { record = users[keyLower]; matchedKey = keyLower; }
+    else if (users[keyNorm]) { record = users[keyNorm]; matchedKey = keyNorm; }
+    else {
+      const target = keyNorm;
+      for (const k of Object.keys(users)) {
+        if (normKey(k) === target) { record = users[k]; matchedKey = k; break; }
+      }
+    }
+    if (!record && pwd) {
+      for (const k of Object.keys(users)) {
+        const v = users[k];
+        if (v && typeof v.password === 'string' && v.password === pwd) { record = v; matchedKey = k; break; }
+      }
+    }
+    try {
+      console.log('[login] users keys:', Object.keys(users));
+      console.log('[login] input:', u, 'norm:', keyNorm, 'matchedKey:', matchedKey);
+      console.log('[login] record exists:', !!record);
+    } catch (_) {}
+    if (record && typeof record.password === 'string' && record.password === pwd) {
+      localStorage.setItem('session', JSON.stringify({ username: matchedKey || keyNorm }));
       
-      // SweetAlert2 personalizado para login exitoso
+      if (document.activeElement) { try { document.activeElement.blur(); } catch (_) {} }
       Swal.fire({
         title: '¡Bienvenido!',
         text: `Hola ${username}, has iniciado sesión correctamente`,
@@ -85,6 +122,8 @@ const Login = ({ onLogin }) => {
         color: '#43a047',
         confirmButtonColor: '#43a047',
         confirmButtonText: 'Continuar',
+        focusConfirm: true,
+        didOpen: (popup) => { try { popup.focus(); } catch (_) {} },
         showClass: {
           popup: 'animate__animated animate__fadeInDown'
         },
@@ -96,19 +135,31 @@ const Login = ({ onLogin }) => {
           confirmButton: 'swal2-confirm-custom'
         }
       }).then(() => {
-        onLogin(username);
+        onLogin(matchedKey || keyNorm);
       });
     } else {
-      // SweetAlert2 para error de login
-      Swal.fire({
-        title: 'Error de autenticación',
-        text: 'Usuario o contraseña incorrectos',
-        icon: 'error',
-        background: '#fff6f6',
-        color: '#e57373',
-        confirmButtonColor: '#e57373',
-        confirmButtonText: 'Intentar de nuevo'
-      });
+      let message = 'Usuario o contraseña incorrectos';
+      if (!Object.keys(users).length) {
+        message = 'No hay usuarios guardados en este navegador';
+      } else if (record && record.password !== pwd) {
+        message = 'Contraseña incorrecta';
+      } else if (!record) {
+        message = 'El usuario no existe';
+      }
+      if (typeof Swal !== 'undefined') {
+        if (document.activeElement) { try { document.activeElement.blur(); } catch (_) {} }
+        Swal.fire({
+          title: 'Error de autenticación',
+          text: message,
+          icon: 'error',
+          background: '#fff6f6',
+          color: '#e57373',
+          confirmButtonColor: '#e57373',
+          confirmButtonText: 'Intentar de nuevo',
+          focusConfirm: true,
+          didOpen: (popup) => { try { popup.focus(); } catch (_) {} }
+        });
+      }
     }
   };
 

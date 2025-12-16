@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Link, Paper } from '@mui/material';
 import { motion } from 'framer-motion';
 
@@ -8,29 +9,78 @@ const Register = () => {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!username || !password) {
+    const u = (username || '').trim();
+    const normKey = (s) => (s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    const p1 = (password || '').trim();
+    const p2 = (confirm || '').trim();
+    if (!u || !p1) {
       setError('Completa todos los campos');
       return;
     }
-    if (password !== confirm) {
+    if (p1 !== p2) {
       setError('Las contraseñas no coinciden');
       return;
     }
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    if (users[username]) {
-      setError('El usuario ya existe');
-      return;
+    try {
+      let users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (!users || typeof users !== 'object' || Array.isArray(users)) { users = {}; }
+      const keyNormalized = normKey(u);
+      const exists = Object.keys(users).some(k => normKey(k) === keyNormalized);
+      if (exists) {
+        setError('El usuario ya existe');
+        return;
+      }
+      users[keyNormalized] = { password: p1 };
+      localStorage.setItem('users', JSON.stringify(users));
+      setSuccess('¡Usuario registrado! Ahora puedes iniciar sesión.');
+      setError('');
+      setUsername('');
+      setPassword('');
+      setConfirm('');
+      if (typeof Swal !== 'undefined') {
+        if (document.activeElement) { try { document.activeElement.blur(); } catch (_) {} }
+        Swal.fire({
+          title: 'Usuario registrado',
+          text: 'Ahora puedes iniciar sesión',
+          icon: 'success',
+          background: '#f8fff5',
+          color: '#43a047',
+          confirmButtonColor: '#43a047',
+          confirmButtonText: 'Ir a iniciar sesión',
+          focusConfirm: true,
+          didOpen: (popup) => { try { popup.focus(); } catch (_) {} }
+        }).then(() => {
+          navigate('/login');
+        });
+      } else {
+        navigate('/login');
+      }
+    } catch (e) {
+      setError('No se pudo guardar el usuario en este navegador');
+      if (typeof Swal !== 'undefined') {
+        if (document.activeElement) { try { document.activeElement.blur(); } catch (_) {} }
+        Swal.fire({
+          title: 'Error al registrar',
+          text: 'No se pudo guardar el usuario. Revisa permisos de almacenamiento.',
+          icon: 'error',
+          background: '#fff6f6',
+          color: '#e57373',
+          confirmButtonColor: '#e57373',
+          confirmButtonText: 'Entendido',
+          focusConfirm: true,
+          didOpen: (popup) => { try { popup.focus(); } catch (_) {} }
+        });
+      }
     }
-    users[username] = { password };
-    localStorage.setItem('users', JSON.stringify(users));
-    setSuccess('¡Usuario registrado! Ahora puedes iniciar sesión.');
-    setError('');
-    setUsername('');
-    setPassword('');
-    setConfirm('');
   };
 
   return (

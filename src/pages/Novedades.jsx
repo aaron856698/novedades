@@ -7,7 +7,7 @@ const Novedades = ({ user, onLogout, searchDate, searchUser, handleCopyDay }) =>
     onLogout={onLogout}
     storageKeyPrefix="novedades_"
     titulo="Novedades"
-    color="primary"
+    color="success"
     showSearchUser={true}
     searchDate={searchDate}
     searchUser={searchUser}

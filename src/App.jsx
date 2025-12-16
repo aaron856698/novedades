@@ -12,20 +12,20 @@ import Swal from 'sweetalert2';
 const Novedades = React.lazy(() => import('./pages/Novedades'));
 const Eventos = React.lazy(() => import('./pages/Eventos'));
 const Reclamos = React.lazy(() => import('./pages/Reclamos'));
-const Reservas = React.lazy(() => import('./pages/Reservas'));
+const Paqueteria = React.lazy(() => import('./pages/Paqueteria'));
 
 const menuItems = [
-  { label: 'Novedades', path: '/novedades', color: '#2196f3' },
+  { label: 'Novedades', path: '/novedades', color: '#4caf50', text: '#fff' },
   { label: 'Eventos', path: '/eventos', color: '#e57373' },
   { label: 'Reclamos', path: '/reclamos', color: '#ffd600', text: '#333' },
-  { label: 'Reservas', path: '/reservas', color: '#ba68c8' },
+  { label: 'Paquetería', path: '/paqueteria', color: '#4caf50', text: '#fff' },
 ];
 
 function getSectionColor(pathname) {
-  if (pathname.startsWith('/novedades')) return { bg: '#2196f3', text: '#fff' };
+  if (pathname.startsWith('/novedades')) return { bg: '#4caf50', text: '#fff' };
   if (pathname.startsWith('/eventos')) return { bg: '#e57373', text: '#fff' };
   if (pathname.startsWith('/reclamos')) return { bg: '#ffd600', text: '#333' };
-  if (pathname.startsWith('/reservas')) return { bg: '#ba68c8', text: '#fff' };
+  if (pathname.startsWith('/paqueteria')) return { bg: '#4caf50', text: '#fff' };
   return { bg: '#1976d2', text: '#fff' };
 }
 
@@ -33,7 +33,7 @@ function getSectionTitle(pathname) {
   if (pathname.startsWith('/novedades')) return 'Registro de novedades';
   if (pathname.startsWith('/eventos')) return 'Registro de eventos';
   if (pathname.startsWith('/reclamos')) return 'Registro de reclamos';
-  if (pathname.startsWith('/reservas')) return 'Registro de reservas';
+  if (pathname.startsWith('/paqueteria')) return 'Gestión de paquetería';
   return 'Registro';
 }
 
@@ -198,7 +198,7 @@ function App() {
   };
 
   // Mostrar menú solo si está logueado y en una sección de registro
-  const showMenu = user && ['/novedades', '/eventos', '/reclamos', '/reservas'].some(p => location.pathname.startsWith(p));
+  const showMenu = user && ['/novedades', '/eventos', '/reclamos', '/paqueteria'].some(p => location.pathname.startsWith(p));
   const sectionColor = getSectionColor(location.pathname);
   const sectionTitle = getSectionTitle(location.pathname);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
@@ -276,7 +276,7 @@ function App() {
                   ) : (
                     <TextField
                       size="small"
-                      label="Buscar por propietario"
+                      label={location.pathname.startsWith('/paqueteria') ? 'Buscar por destinatario' : 'Buscar por propietario'}
                       value={searchPropietario}
                       onChange={e => setSearchPropietario(e.target.value)}
                       InputLabelProps={{ sx: { fontSize: 15, color: '#388e3c', fontWeight: 500, letterSpacing: 0.2 } }}
@@ -317,7 +317,7 @@ function App() {
                       transition: 'box-shadow 0.2s',
                     }}
                   >
-                    Copiar novedades del día
+                    Novedades
                   </Button>
                   {(searchDate || searchUser || searchPropietario) && (
                     <Button
@@ -462,10 +462,10 @@ function App() {
             }
           />
           <Route
-            path="/reservas"
+            path="/paqueteria"
             element={
               <ProtectedRoute>
-                <Reservas
+                <Paqueteria
                   user={user}
                   onLogout={handleLogout}
                   searchDate={searchDate}

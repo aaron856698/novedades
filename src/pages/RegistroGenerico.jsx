@@ -13,11 +13,17 @@ import BookOnlineIcon from '@mui/icons-material/BookOnline';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PersonIcon from '@mui/icons-material/Person';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HomeIcon from '@mui/icons-material/Home';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 
 const turnos = ["Mañana", "Tarde", "Noche"];
-const conserjes = ["aaron", "maria", "lisa", "martin", "sebastian", "guardia"];
+const conserjes = ["aaron", "maria", "lisa", "martin", "sebastian", "guardia", "fredy", "gaston", "enzo", "emiliano"];
 const turnoColors = { "Mañana": '#81d4fa', "Tarde": '#ffd54f', "Noche": '#9575cd' };
-const conserjeColors = { aaron: '#43a047', maria: '#e57373', lisa: '#ba68c8', martin: '#ffd600', sebastian: '#00bcd4', guardia: '#8d6e63' };
+const conserjeColors = { aaron: '#43a047', maria: '#e57373', lisa: '#ba68c8', martin: '#ffd600', sebastian: '#00bcd4', guardia: '#8d6e63', fredy: '#ff6b6b', gaston: '#4ecdc4', enzo: '#95e1d3', emiliano: '#f38181' };
 
 const highlightColors = [
   { name: 'AMA', color: '#fff59d' },
@@ -39,6 +45,9 @@ const sectionStyles = {
   },
   info: {
     main: '#ba68c8', bg: '#faf6ff', icon: <BookOnlineIcon fontSize="large" sx={{ color: '#ba68c8', mr: 1 }} />,
+  },
+  success: {
+    main: '#4caf50', bg: '#e8f5e9', icon: <BookOnlineIcon fontSize="large" sx={{ color: '#4caf50', mr: 1 }} />,
   },
 };
 
@@ -64,7 +73,7 @@ const colorMap = {
   pink: '#f8bbd0',
 };
 
-const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje, showSearchUser, searchDate, searchUser, searchPropietario, handleCopyDay }) => {
+const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, extraFields, hideConserje, showSearchUser, searchDate, searchUser, searchPropietario, handleCopyDay, propietarioLabel }) => {
   const [novedad, setNovedad] = useState('');
   const [novedadHtml, setNovedadHtml] = useState('');
   const [novedades, setNovedades] = useState([]);
@@ -74,6 +83,7 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
   const [fileName, setFileName] = useState('');
   const [search, setSearch] = useState('');
   const textareaRef = useRef(null);
+  const listRef = useRef(null);
   const theme = useTheme();
 
   // Estados para campos extra
@@ -395,6 +405,74 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
     return matchFecha && matchUser && matchPropietario;
   });
 
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [novedadesFiltradas.length]);
+
+  const handleExport = () => {
+    try {
+      const key = `${storageKeyPrefix}${user}`;
+      const raw = localStorage.getItem(key);
+      const items = raw ? JSON.parse(raw) : novedades;
+      const payload = {
+        section: storageKeyPrefix,
+        user,
+        timestamp: new Date().toISOString(),
+        items,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${titulo.toLowerCase()}_${user}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ title: 'Exportación lista', text: 'Se descargó la copia de seguridad', icon: 'success', background: '#f3f8ff', color: '#2196f3', confirmButtonColor: '#2196f3', confirmButtonText: 'Entendido' });
+      }
+    } catch (_) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ title: 'Error al exportar', text: 'No se pudo generar el archivo', icon: 'error', background: '#fff6f6', color: '#e57373', confirmButtonColor: '#e57373', confirmButtonText: 'Intentar de nuevo' });
+      }
+    }
+  };
+
+  const handleImportFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const items = Array.isArray(data) ? data : data && data.items ? data.items : null;
+        if (!items) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({ title: 'Archivo inválido', text: 'No se encontraron datos para importar', icon: 'error', background: '#fff6f6', color: '#e57373', confirmButtonColor: '#e57373', confirmButtonText: 'Entendido' });
+          }
+          e.target.value = '';
+          return;
+        }
+        const key = `${storageKeyPrefix}${user}`;
+        localStorage.setItem(key, JSON.stringify(items));
+        setNovedades(items);
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ title: 'Importación exitosa', text: 'Se restauraron las novedades', icon: 'success', background: '#f8fff5', color: '#43a047', confirmButtonColor: '#43a047', confirmButtonText: 'Perfecto' });
+        }
+      } catch (_) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ title: 'Error al importar', text: 'No se pudo leer el archivo', icon: 'error', background: '#fff6f6', color: '#e57373', confirmButtonColor: '#e57373', confirmButtonText: 'Intentar de nuevo' });
+        }
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Copiar novedades del día filtrado
   const handleCopyDayInternal = () => {
     const fechaCopia = searchDate || new Date().toISOString().slice(0, 10);
@@ -498,9 +576,10 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
         {/* Formulario */}
         <Paper
           component={motion.div}
-          initial={{ opacity: 0, x: -40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
+          initial={{ opacity: 0, x: -40, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+          whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
           elevation={8}
           sx={{
             p: 6,
@@ -520,6 +599,12 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
             bgcolor: section.bg,
             boxShadow: '0 8px 32px 0 rgba(60,60,60,0.10)',
             overflowY: 'auto',
+            background: `linear-gradient(135deg, ${section.bg} 0%, ${section.bg}dd 100%)`,
+            border: `1px solid ${section.main}20`,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              boxShadow: `0 12px 48px 0 ${section.main}25`,
+            },
           }}
         >
           <Box display="flex" alignItems="center" mb={2}>
@@ -638,6 +723,9 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
               </FormControl>
             )}
             <Button
+              component={motion.button}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               variant="contained"
               color={color || 'primary'}
               size="large"
@@ -648,14 +736,28 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                 borderRadius: 3,
                 fontWeight: 700,
                 bgcolor: section.main,
-                boxShadow: '0 0 0 0 rgba(67,160,71,0.7)',
-                animation: 'pulse 1.5s infinite',
-                '@keyframes pulse': {
-                  '0%': { boxShadow: '0 0 0 0 rgba(67,160,71,0.7)' },
-                  '70%': { boxShadow: '0 0 0 12px rgba(67,160,71,0)' },
-                  '100%': { boxShadow: '0 0 0 0 rgba(67,160,71,0)' },
+                boxShadow: `0 4px 16px 0 ${section.main}40`,
+                background: `linear-gradient(135deg, ${section.main} 0%, ${section.main}dd 100%)`,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: '-100%',
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                  transition: 'left 0.5s',
                 },
-                '&:hover': { bgcolor: section.main, opacity: 0.9 },
+                '&:hover': { 
+                  bgcolor: section.main,
+                  boxShadow: `0 6px 24px 0 ${section.main}60`,
+                  '&::before': {
+                    left: '100%',
+                  },
+                },
               }}
             >
               {editIndex !== null ? 'Guardar' : 'Agregar'}
@@ -677,9 +779,9 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
         {/* Lista de novedades */}
         <Paper
           component={motion.div}
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
+          initial={{ opacity: 0, x: 40, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
           elevation={8}
           sx={{
             p: 4,
@@ -693,7 +795,14 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
             flexDirection: 'column',
             boxSizing: 'border-box',
             boxShadow: '0 8px 32px 0 rgba(60,60,60,0.10)',
+            background: `linear-gradient(135deg, ${section.bg} 0%, ${section.bg}dd 100%)`,
+            border: `1px solid ${section.main}20`,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              boxShadow: `0 12px 48px 0 ${section.main}25`,
+            },
           }}
+          ref={listRef}
         >
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={2} alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center">
@@ -704,9 +813,13 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
               </Typography>
             </Box>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" width="100%" maxWidth={600}>
-              {/* Eliminar los estados y JSX de filtros: searchDate, setSearchDate, searchUser, setSearchUser, searchPropietario, setSearchPropietario */}
-              {/* Recibir como props: searchDate, searchUser, searchPropietario, handleCopyDay */}
-              {/* Usar estos props en el filtrado y en el botón copiar */}
+              <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={handleExport} sx={{ borderRadius: 2, fontWeight: 600 }}>
+                Exportar
+              </Button>
+              <Button component="label" variant="outlined" startIcon={<FileUploadIcon />} sx={{ borderRadius: 2, fontWeight: 600 }}>
+                Importar
+                <input type="file" hidden accept="application/json" onChange={handleImportFile} />
+              </Button>
             </Stack>
           </Stack>
           <Divider sx={{ mb: 2 }} />
@@ -715,46 +828,148 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
               <React.Fragment key={idx}>
                 <ListItem
                   component={motion.div}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: idx * 0.05,
+                    ease: [0.4, 0, 0.2, 1]
+                  }}
+                  whileHover={{ 
+                    y: -4,
+                    transition: { duration: 0.2 }
+                  }}
                   secondaryAction={
-                    <>
-                      <IconButton edge="end" aria-label="copy" onClick={() => handleCopy(item.novedad)}>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton 
+                        edge="end" 
+                        aria-label="copy" 
+                        onClick={() => handleCopy(item.novedad)}
+                        sx={{
+                          transition: 'all 0.2s',
+                          '&:hover': { 
+                            bgcolor: section.main + '15',
+                            transform: 'scale(1.1)',
+                            color: section.main
+                          }
+                        }}
+                      >
                         <ContentCopyIcon fontSize="large" />
                       </IconButton>
-                      <IconButton edge="end" aria-label="edit" onClick={() => handleEdit(idx)}>
+                      <IconButton 
+                        edge="end" 
+                        aria-label="edit" 
+                        onClick={() => handleEdit(idx)}
+                        sx={{
+                          transition: 'all 0.2s',
+                          '&:hover': { 
+                            bgcolor: '#2196f315',
+                            transform: 'scale(1.1)',
+                            color: '#2196f3'
+                          }
+                        }}
+                      >
                         <EditIcon fontSize="large" />
                       </IconButton>
-                      <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(idx)}>
+                      <IconButton 
+                        edge="end" 
+                        aria-label="delete" 
+                        onClick={() => handleDelete(idx)}
+                        sx={{
+                          transition: 'all 0.2s',
+                          '&:hover': { 
+                            bgcolor: '#f4433615',
+                            transform: 'scale(1.1)',
+                            color: '#f44336'
+                          }
+                        }}
+                      >
                         <DeleteIcon fontSize="large" />
                       </IconButton>
-                    </>
+                    </Box>
                   }
                   sx={{
                     mb: 3,
-                    borderRadius: 3,
+                    borderRadius: 4,
                     bgcolor: '#fff',
-                    boxShadow: 2,
+                    boxShadow: '0 2px 12px 0 rgba(60,60,60,0.08)',
                     p: 3,
                     alignItems: 'flex-start',
                     wordBreak: 'break-word',
                     minHeight: 80,
-                    transition: 'box-shadow 0.2s',
-                    '&:hover': { boxShadow: '0 4px 24px 0 rgba(60,60,60,0.13)' },
-                    borderLeft: `8px solid ${turnoColors[item.turno] || '#bdbdbd'}`,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    borderLeft: `6px solid ${turnoColors[item.turno] || '#bdbdbd'}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: `linear-gradient(135deg, ${section.main}08 0%, transparent 100%)`,
+                      opacity: 0,
+                      transition: 'opacity 0.3s',
+                    },
+                    '&:hover': { 
+                      boxShadow: `0 8px 32px 0 ${section.main}20`,
+                      transform: 'translateY(-4px)',
+                      '&::before': {
+                        opacity: 1,
+                      },
+                    },
                   }}
                 >
                   <Stack direction="row" alignItems="center" spacing={2} mb={1}>
                     <Chip
+                      component={motion.div}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       label={item.turno}
-                      sx={{ bgcolor: turnoColors[item.turno] || '#bdbdbd', color: '#333', fontWeight: 700, fontSize: 16 }}
+                      sx={{ 
+                        bgcolor: turnoColors[item.turno] || '#bdbdbd', 
+                        color: '#333', 
+                        fontWeight: 700, 
+                        fontSize: 16,
+                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          boxShadow: '0 4px 12px 0 rgba(0,0,0,0.15)',
+                        }
+                      }}
                     />
                     <Chip
+                      component={motion.div}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       label={item.conserje ? item.conserje.charAt(0).toUpperCase() + item.conserje.slice(1) : '-'}
-                      sx={{ bgcolor: conserjeColors[item.conserje] || '#bdbdbd', color: '#fff', fontWeight: 700, fontSize: 16 }}
+                      sx={{ 
+                        bgcolor: conserjeColors[item.conserje] || '#bdbdbd', 
+                        color: '#fff', 
+                        fontWeight: 700, 
+                        fontSize: 16,
+                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          boxShadow: '0 4px 12px 0 rgba(0,0,0,0.15)',
+                        }
+                      }}
                     />
-                    <Avatar sx={{ bgcolor: '#eee', color: '#333', fontWeight: 700, width: 32, height: 32, fontSize: 18 }}>
+                    <Avatar 
+                      component={motion.div}
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      sx={{ 
+                        bgcolor: section.main + '20', 
+                        color: section.main, 
+                        fontWeight: 700, 
+                        width: 36, 
+                        height: 36, 
+                        fontSize: 18,
+                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
+                      }}
+                    >
                       {item.user ? item.user.charAt(0).toUpperCase() : user.charAt(0).toUpperCase()}
                     </Avatar>
                   </Stack>
@@ -766,15 +981,109 @@ const RegistroGenerico = ({ user, onLogout, storageKeyPrefix, titulo, color, ext
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: 18, mt: 1 }}>
                         Fecha: <b>{item.fecha || '-'}</b> | Turno: <b>{item.turno || '-'}</b> | Cubre: <b>{item.conserje ? item.conserje.charAt(0).toUpperCase() + item.conserje.slice(1) : '-'}</b>
                         {/* Mostrar campos extra si existen */}
-                        {extraFields && Object.entries(extraFields).map(([key, field]) => (
-                          key === 'propietario' ? null : <span key={key}> | {field.label}: <b>{item[key] || '-'}</b></span>
-                        ))}
+                        {extraFields && Object.entries(extraFields).map(([key, field]) => {
+                          // Excluir propietario, horaRecibida y horaEntregada (se muestran aparte)
+                          if (key === 'propietario' || key === 'horaRecibida' || key === 'horaEntregada') return null;
+                          return <span key={key}> | {field.label}: <b>{item[key] || '-'}</b></span>;
+                        })}
                       </Typography>
-                      {/* Mostrar propietario en una línea separada y más prolija */}
+                      {/* Mostrar horas de forma destacada si existen */}
+                      {(item.horaRecibida || item.horaEntregada) && (
+                        <Box mt={1} display="flex" gap={2} flexWrap="wrap">
+                          {item.horaRecibida && (
+                            <Chip
+                              icon={<AccessTimeIcon />}
+                              label={`Hora recibida: ${item.horaRecibida}`}
+                              sx={{
+                                bgcolor: '#e3f2fd',
+                                color: '#1976d2',
+                                fontWeight: 700,
+                                fontSize: 14,
+                                height: 32,
+                                '& .MuiChip-icon': { color: '#1976d2' }
+                              }}
+                            />
+                          )}
+                          {item.horaEntregada && (
+                            <Chip
+                              icon={<CheckCircleIcon />}
+                              label={`Hora entregada: ${item.horaEntregada}`}
+                              sx={{
+                                bgcolor: '#e8f5e9',
+                                color: '#2e7d32',
+                                fontWeight: 700,
+                                fontSize: 14,
+                                height: 32,
+                                '& .MuiChip-icon': { color: '#2e7d32' }
+                              }}
+                            />
+                          )}
+                        </Box>
+                      )}
+                      {/* Mostrar propietario/destinatario en una línea separada y más prolija */}
                       {item.propietario && (
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: 16, mt: 0.5, ml: 0, fontStyle: 'italic', display: 'block' }}>
-                          Propietario: <b>{item.propietario}</b>
+                          {propietarioLabel || 'Propietario'}: <b>{item.propietario}</b>
                         </Typography>
+                      )}
+                      {/* Mostrar información adicional de paquetería de forma destacada */}
+                      {(item.unidad || item.tracking || item.estado || item.recibidoPor) && (
+                        <Box mt={1.5} display="flex" gap={1.5} flexWrap="wrap">
+                          {item.unidad && (
+                            <Chip
+                              icon={<HomeIcon />}
+                              label={`Unidad: ${item.unidad}`}
+                              size="small"
+                              sx={{
+                                bgcolor: section.main + '15',
+                                color: section.main,
+                                fontWeight: 600,
+                                fontSize: 13,
+                                '& .MuiChip-icon': { color: section.main }
+                              }}
+                            />
+                          )}
+                          {item.tracking && (
+                            <Chip
+                              icon={<LocalShippingIcon />}
+                              label={`Tracking: ${item.tracking}`}
+                              size="small"
+                              sx={{
+                                bgcolor: section.main + '15',
+                                color: section.main,
+                                fontWeight: 600,
+                                fontSize: 13,
+                                '& .MuiChip-icon': { color: section.main }
+                              }}
+                            />
+                          )}
+                          {item.estado && (
+                            <Chip
+                              label={`Estado: ${item.estado}`}
+                              size="small"
+                              sx={{
+                                bgcolor: item.estado === 'Entregado' ? '#4caf50' : item.estado === 'Recibido' ? '#2196f3' : '#ff9800',
+                                color: '#fff',
+                                fontWeight: 700,
+                                fontSize: 13,
+                              }}
+                            />
+                          )}
+                          {item.recibidoPor && (
+                            <Chip
+                              icon={<PersonIcon />}
+                              label={`Recibido por: ${item.recibidoPor}`}
+                              size="small"
+                              sx={{
+                                bgcolor: section.main + '15',
+                                color: section.main,
+                                fontWeight: 600,
+                                fontSize: 13,
+                                '& .MuiChip-icon': { color: section.main }
+                              }}
+                            />
+                          )}
+                        </Box>
                       )}
                       {item.file && (
                         <Box mt={2}>
